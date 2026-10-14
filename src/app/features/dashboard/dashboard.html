@@ -1,0 +1,84 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Sales dashboard</p>
+      <h1>Software project quoter</h1>
+    </div>
+    <div class="row">
+      <a class="btn primary" routerLink="/cotizaciones/nueva">New quote</a>
+      <button class="btn" type="button" (click)="loadDemo()" [disabled]="loadingDemo()">
+        {{ loadingDemo() ? 'Loading…' : 'Load demo data' }}
+      </button>
+    </div>
+  </div>
+
+  @if (error(); as message) {
+    <div class="notice error row">
+      <span>Could not load the dashboard: {{ message }}</span>
+      <span class="spacer"></span>
+      <button class="btn small" type="button" (click)="load()">Retry</button>
+    </div>
+  } @else if (loading()) {
+    <div class="grid cols-4">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="card"><div class="skeleton"></div></div>
+      }
+    </div>
+  } @else if (stats(); as s) {
+    <div class="grid cols-4">
+      <div class="card stat"><span class="value">{{ s.total_cotizaciones }}</span><span class="label">Quotes</span></div>
+      <div class="card stat"><span class="value">{{ s.tasa_cierre_pct === null ? "—" : s.tasa_cierre_pct + "%" }}</span><span class="label">Close rate</span></div>
+      <div class="card stat"><span class="value">{{ cop(s.ticket_promedio) }}</span><span class="label">Average ticket</span></div>
+      <div class="card stat"><span class="value">{{ cop(s.valor_aceptado) }}</span><span class="label">Accepted value</span></div>
+    </div>
+
+    @if (s.total_cotizaciones === 0) {
+      <div class="empty">
+        There are no quotes yet. Click <strong>Load demo data</strong> or create the first one.
+      </div>
+    } @else {
+      <div class="grid cols-2">
+        <div class="card">
+          <h2>Quotes by status</h2>
+          <div class="grid">
+            @for (step of byStatus(); track step.status) {
+              <div class="grid" style="gap: 4px">
+                <div class="row small">
+                  <span class="badge" [class]="step.status">{{ step.label }}</span><span class="spacer"></span><strong>{{ step.count }}</strong>
+                </div>
+                <div class="bar"><span [style.width.%]="step.width"></span></div>
+              </div>
+            }
+          </div>
+          <p class="small subtle" style="margin-top: 12px">In negotiation: <strong>{{ cop(s.valor_en_negociacion) }}</strong></p>
+        </div>
+
+        <div class="card">
+          <h2>Hours quoted by role</h2>
+          <div class="grid">
+            @for (r of hoursByRole(); track r.role) {
+              <div class="grid" style="gap: 4px">
+                <div class="row small"><span>{{ r.role }}</span><span class="spacer"></span><strong>{{ num(r.hours) }} h</strong></div>
+                <div class="bar"><span [style.width.%]="r.width"></span></div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Most quoted modules</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Module</th><th class="num">Times</th></tr></thead>
+            <tbody>
+              @for (m of s.modulos_mas_cotizados; track m.modulo) {
+                <tr><td>{{ m.modulo }}</td><td class="num">{{ m.veces }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+</section>
