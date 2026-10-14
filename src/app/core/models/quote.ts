@@ -25,6 +25,13 @@ export function quoteCode(id: number): string {
   return `QT-${String(id).padStart(4, '0')}`;
 }
 
+/** Etiquetas para complejidad y confianza: el backend envía 'baja' | 'media' | 'alta'. */
+export const LEVEL_LABELS: Record<string, string> = { baja: 'Low', media: 'Medium', alta: 'High' };
+
+export function levelLabel(level: string | null | undefined): string {
+  return level ? (LEVEL_LABELS[level] ?? level) : '—';
+}
+
 export interface QuoteSummary {
   id: number;
   cliente_id: number;
