@@ -1,0 +1,82 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Client portfolio</p>
+      <h1>Clients</h1>
+    </div>
+    <button class="btn primary" type="button" (click)="openNew()">New client</button>
+  </div>
+
+  @if (formOpen()) {
+    <form class="card form" [formGroup]="form" (ngSubmit)="save()">
+      <h2>{{ editingId() === null ? 'New client' : 'Edit client' }}</h2>
+
+      <div class="two">
+        <label>
+          Contact name
+          <input formControlName="nombre" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) {
+            <span class="error-text">Enter the name (at least 2 characters).</span>
+          }
+        </label>
+        <label>
+          Company (optional)
+          <input formControlName="empresa" />
+        </label>
+      </div>
+
+      <div class="two">
+        <label>
+          Email
+          <input type="email" formControlName="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <span class="error-text">Enter a valid email.</span>
+          }
+        </label>
+        <label>
+          Phone (optional)
+          <input formControlName="telefono" />
+        </label>
+      </div>
+
+      <div class="row">
+        <button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        <button class="btn" type="button" (click)="closeForm()">Cancel</button>
+      </div>
+    </form>
+  }
+
+  @if (error(); as message) {
+    <div class="notice error row">
+      <span>{{ message }}</span><span class="spacer"></span>
+      <button class="btn small" type="button" (click)="load()">Retry</button>
+    </div>
+  } @else if (loading()) {
+    <div class="card"><div class="skeleton"></div></div>
+  } @else if (clients().length === 0) {
+    <div class="empty">There are no clients yet. Register the first one or load the demo data from the Dashboard.</div>
+  } @else {
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr><th>Contact</th><th>Company</th><th>Phone</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (c of clients(); track c.id) {
+            <tr>
+              <td><strong>{{ c.nombre }}</strong><br /><span class="small subtle">{{ c.email }}</span></td>
+              <td>{{ c.empresa || '—' }}</td>
+              <td>{{ c.telefono || '—' }}</td>
+              <td>
+                <div class="row" style="justify-content: flex-end">
+                  <button class="btn small" type="button" (click)="openEdit(c)">Edit</button>
+                  <button class="btn small danger" type="button" (click)="remove(c)">Delete</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
