@@ -1,0 +1,72 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Basis of the financial calculation</p>
+      <h1>Rates by role</h1>
+    </div>
+  </div>
+
+  <p class="subtle">
+    The cost of each quote comes from each role's hours times its hourly rate. If a role has no rate,
+    the system cannot calculate the price.
+  </p>
+
+  <form class="card form" [formGroup]="form" (ngSubmit)="save()">
+    <h2>{{ editingId() === null ? 'New rate' : 'Edit rate' }}</h2>
+    <div class="two">
+      <label>
+        Role
+        <input formControlName="rol" placeholder="e.g. Backend" />
+        @if (form.controls.rol.touched && form.controls.rol.invalid) {
+          <span class="error-text">Enter the role name.</span>
+        }
+      </label>
+      <label>
+        Hourly rate (COP)
+        <input type="number" min="1" formControlName="valor_hora" />
+        @if (form.controls.valor_hora.touched && form.controls.valor_hora.invalid) {
+          <span class="error-text">It must be greater than zero.</span>
+        }
+      </label>
+    </div>
+    <div class="row">
+      <button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      @if (editingId() !== null) {
+        <button class="btn" type="button" (click)="cancel()">Cancel</button>
+      }
+    </div>
+  </form>
+
+  @if (error(); as message) {
+    <div class="notice error row">
+      <span>{{ message }}</span><span class="spacer"></span>
+      <button class="btn small" type="button" (click)="load()">Retry</button>
+    </div>
+  } @else if (loading()) {
+    <div class="card"><div class="skeleton"></div></div>
+  } @else if (tariffs().length === 0) {
+    <div class="empty">There are no rates. Create at least: Backend, Frontend, UX/UI Design, QA, DevOps and Project Management.</div>
+  } @else {
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr><th>Role</th><th class="num">Hourly rate</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (t of tariffs(); track t.id) {
+            <tr>
+              <td><strong>{{ t.rol }}</strong></td>
+              <td class="num money">{{ cop(t.valor_hora) }}</td>
+              <td>
+                <div class="row" style="justify-content: flex-end">
+                  <button class="btn small" type="button" (click)="edit(t)">Edit</button>
+                  <button class="btn small danger" type="button" (click)="remove(t)">Delete</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
