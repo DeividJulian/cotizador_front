@@ -1,0 +1,84 @@
+@if (quote().financiero.total) {
+  <div class="grid cols-2">
+    <div class="card">
+      <h2>Price breakdown</h2>
+      <div class="stack-bar">
+        @for (s of slices(); track s.label) {
+          <span [style.width.%]="s.width" [style.background]="s.color" [title]="s.label"></span>
+        }
+      </div>
+      <div class="legend" style="margin: 10px 0 14px">
+        @for (s of slices(); track s.label) {
+          <span><i [style.background]="s.color"></i>{{ s.label }}</span>
+        }
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><td>Direct cost (hours × rate)</td><td class="num money">{{ cop(quote().financiero.costo_directo) }}</td></tr>
+            <tr><td>Contingency ({{ quote().contingencia_pct }}%)</td><td class="num money">{{ cop(quote().financiero.contingencia) }}</td></tr>
+            <tr><td>Margin ({{ quote().margen_pct }}%)</td><td class="num money">{{ cop(quote().financiero.margen) }}</td></tr>
+            @if (quote().financiero.descuento) {
+              <tr><td>Discount ({{ quote().descuento_pct }}%)</td><td class="num money">-{{ cop(quote().financiero.descuento) }}</td></tr>
+            }
+            <tr><td>Subtotal</td><td class="num money">{{ cop(quote().financiero.base_gravable) }}</td></tr>
+            <tr><td>VAT ({{ quote().iva_pct }}%)</td><td class="num money">{{ cop(quote().financiero.iva) }}</td></tr>
+            <tr><td><strong>Total</strong></td><td class="num money" style="color: var(--accent)">{{ cop(quote().financiero.total) }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cost by role</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Role</th><th class="num">Hours</th><th class="num">Hourly rate</th><th class="num">Cost</th></tr></thead>
+          <tbody>
+            @for (r of quote().financiero.detalle_por_rol ?? []; track r.rol) {
+              <tr>
+                <td>{{ r.rol }}</td>
+                <td class="num">{{ num(r.horas) }}</td>
+                <td class="num">{{ cop(r.valor_hora) }}</td>
+                <td class="num money">{{ cop(r.costo) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <h2>Hour range by role</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Role</th><th class="num">Optimistic</th><th class="num">Expected</th><th class="num">Pessimistic</th></tr></thead>
+          <tbody>
+            @for (r of roles(); track r.role) {
+              <tr><td>{{ r.role }}</td><td class="num">{{ num(r.optimista) }}</td><td class="num"><strong>{{ num(r.esperadas) }}</strong></td><td class="num">{{ num(r.pesimista) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Schedule and payment milestones</h2>
+      <p class="small subtle" style="margin-bottom: 8px">Estimated duration: <strong>{{ quote().financiero.duracion_semanas }} weeks</strong></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Milestone</th><th class="num">Week</th><th class="num">%</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            @for (h of quote().financiero.hitos_pago ?? []; track h.nombre) {
+              <tr><td>{{ h.nombre }}</td><td class="num">{{ h.semana }}</td><td class="num">{{ h.porcentaje }}</td><td class="num money">{{ cop(h.monto) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="empty">There is no financial calculation yet. Click <strong>Analyze with AI</strong> to generate it.</div>
+}
