@@ -132,3 +132,23 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   h1 { font-size: 24px; }
   .page { padding: 20px 14px 96px; }
 }
+
+/* ---------- Cotizador ---------- */
+.money { font-variant-numeric: tabular-nums; font-weight: 700; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); }
+.tab { padding: 8px 14px; border: none; background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.stack-bar { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
+.stack-bar > span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.markdown { line-height: 1.65; }
+.markdown h1 { font-size: 24px; margin: 0 0 12px; }
+.markdown h2 { font-size: 18px; margin: 22px 0 8px; color: var(--accent); }
+.markdown p { margin: 8px 0; }
+.markdown ul { margin: 8px 0; padding-left: 22px; }
+.markdown blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid var(--accent); background: var(--surface-2); color: var(--muted); border-radius: 0 8px 8px 0; }
+.markdown table { margin: 10px 0; }
+.histogram { display: flex; align-items: flex-end; gap: 2px; height: 140px; }
+.histogram > span { flex: 1; background: var(--info); border-radius: 3px 3px 0 0; min-height: 2px; }
+.histogram > span.over { background: var(--bad); }
