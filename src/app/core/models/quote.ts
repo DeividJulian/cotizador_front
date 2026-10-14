@@ -48,3 +48,124 @@ export interface QuoteItem {
   distribucion: Record<string, number>;
   motivos: string;
 }
+
+export interface ScopeModule {
+  clave: string;
+  nombre: string;
+  categoria: string;
+  complejidad: Complexity;
+  palabras_detectadas: string[];
+  motivos: string;
+}
+
+export interface Analysis {
+  modulos: ScopeModule[];
+  senales_complejidad_alta: string[];
+  senales_complejidad_baja: string[];
+  confianza: string;
+  advertencias: string[];
+}
+
+export interface RoleEstimate {
+  optimista: number;
+  probable: number;
+  pesimista: number;
+  esperadas: number;
+}
+
+export interface Estimation {
+  por_rol?: Record<string, RoleEstimate>;
+  horas_optimista?: number;
+  horas_probable?: number;
+  horas_pesimista?: number;
+  horas_esperadas?: number;
+  confianza?: string;
+}
+
+export interface RoleCost {
+  rol: string;
+  horas: number;
+  valor_hora: number;
+  costo: number;
+}
+
+export interface Milestone {
+  nombre: string;
+  porcentaje: number;
+  semana: number;
+  monto: number;
+}
+
+export interface Financial {
+  detalle_por_rol?: RoleCost[];
+  costo_directo?: number;
+  contingencia?: number;
+  margen?: number;
+  subtotal?: number;
+  descuento?: number;
+  base_gravable?: number;
+  iva?: number;
+  total?: number;
+  duracion_semanas?: number;
+  hitos_pago?: Milestone[];
+}
+
+export interface Quote extends QuoteSummary {
+  descripcion_alcance: string;
+  margen_pct: number;
+  contingencia_pct: number;
+  descuento_pct: number;
+  iva_pct: number;
+  analisis: Partial<Analysis>;
+  estimacion: Estimation;
+  financiero: Financial;
+  propuesta: string | null;
+  items: QuoteItem[];
+}
+
+export interface QuoteParams {
+  margen_pct: number;
+  contingencia_pct: number;
+  descuento_pct: number;
+  iva_pct: number;
+}
+
+export interface QuoteCreate extends QuoteParams {
+  cliente_id: number;
+  titulo: string;
+  descripcion_alcance: string;
+}
+
+export interface QuoteUpdate extends Partial<QuoteParams> {
+  titulo?: string;
+  descripcion_alcance?: string;
+}
+
+export interface ItemInput {
+  nombre: string;
+  categoria: string;
+  complejidad: Complexity;
+  horas_probable: number;
+  distribucion?: Record<string, number> | null;
+}
+
+export interface ItemUpdate {
+  nombre?: string;
+  complejidad?: Complexity;
+  horas_probable?: number;
+  distribucion?: Record<string, number>;
+}
+
+export interface SimilarQuote {
+  id: number;
+  titulo: string;
+  estado: QuoteStatus;
+  total: number;
+  similitud: number;
+}
+
+export interface ScopeEstimate {
+  analisis: Analysis;
+  items: Omit<QuoteItem, 'id'>[];
+  estimacion: Estimation;
+}
