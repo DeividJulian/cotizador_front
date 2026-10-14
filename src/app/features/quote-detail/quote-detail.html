@@ -1,0 +1,135 @@
+<section class="page">
+  <a class="small" routerLink="/cotizaciones">← Back to quotes</a>
+
+  @if (error(); as message) {
+    <div class="notice error row">
+      <span>{{ message }}</span><span class="spacer"></span>
+      <button class="btn small" type="button" (click)="load()">Retry</button>
+    </div>
+  } @else if (loading()) {
+    <div class="card"><div class="skeleton"></div></div>
+  } @else if (quote(); as q) {
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">{{ code(q.id) }} · <span class="badge" [class]="q.estado">{{ statusLabel(q.estado) }}</span></p>
+        <h1>{{ q.titulo }}</h1>
+        <p class="subtle small">
+          {{ client()?.nombre ?? 'Client #' + q.cliente_id }}{{ client()?.empresa ? ' · ' + client()?.empresa : '' }}
+        </p>
+      </div>
+      <div class="stat" style="text-align: right">
+        <span class="value" style="color: var(--accent)">{{ q.total ? cop(q.total) : '—' }}</span>
+        <span class="label">{{ q.financiero.duracion_semanas ? q.financiero.duracion_semanas + ' weeks · ' : '' }}{{ num(q.estimacion.horas_esperadas) }} expected h</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        @if (isDraft()) {
+          <button class="btn ai" type="button" (click)="analyze()" [disabled]="busy()">
+            {{ q.items.length ? 'Analyze again' : 'Analyze with AI' }}
+          </button>
+          <button class="btn small" type="button" (click)="editing.set(!editing())">{{ editing() ? 'Close editing' : 'Edit details' }}</button>
+        }
+        <span class="spacer"></span>
+        @for (s of next[q.estado]; track s) {
+          <button class="btn" [class.primary]="s === 'enviada' || s === 'aceptada'" [class.danger]="s === 'rechazada'" type="button"
+            (click)="changeStatus(s)" [disabled]="busy()">
+            {{ actions[s] }}
+          </button>
+        }
+        @if (isDraft()) {
+          <button class="btn danger" type="button" (click)="remove()">Delete</button>
+        }
+      </div>
+      @if (!isDraft()) {
+        <p class="small subtle" style="margin-top: 10px">
+          This quote is "{{ statusLabel(q.estado).toLowerCase() }}": it is frozen. To edit it, move it back to draft.
+        </p>
+      }
+    </div>
+
+    @if (editing() && isDraft()) {
+      <form class="card form" [formGroup]="form" (ngSubmit)="saveParams()">
+        <h2>Details and parameters</h2>
+        <label>
+          Title
+          <input formControlName="titulo" />
+        </label>
+        <label>
+          Scope description
+          <textarea formControlName="descripcion_alcance" rows="6"></textarea>
+          <span class="hint">If you change the scope, click "Analyze again" to detect the modules again.</span>
+        </label>
+        <div class="two">
+          <label>Margin (%) <input type="number" min="0" max="200" formControlName="margen_pct" /></label>
+          <label>Contingency (%) <input type="number" min="0" max="100" formControlName="contingencia_pct" /></label>
+        </div>
+        <div class="two">
+          <label>Discount (%) <input type="number" min="0" max="50" formControlName="descuento_pct" /></label>
+          <label>VAT (%) <input type="number" min="0" max="30" formControlName="iva_pct" /></label>
+        </div>
+        <div class="row">
+          <button class="btn primary" type="submit" [disabled]="busy()">Save and recalculate</button>
+          <button class="btn" type="button" (click)="editing.set(false)">Cancel</button>
+        </div>
+      </form>
+    } @else {
+      <div class="card">
+        <h2>Scope</h2>
+        <p style="white-space: pre-line">{{ q.descripcion_alcance }}</p>
+        @if (q.analisis.confianza) {
+          <p class="small subtle" style="margin-top: 10px">
+            Analysis confidence: <strong>{{ level(q.analisis.confianza) }}</strong>
+            @for (w of q.analisis.advertencias ?? []; track w) { · {{ w }} }
+          </p>
+        }
+      </div>
+    }
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" type="button" [class.active]="tab() === 'modulos'" (click)="tab.set('modulos')">Modules</button>
+      <button class="tab" role="tab" type="button" [class.active]="tab() === 'finanzas'" (click)="tab.set('finanzas')">Finance</button>
+      <button class="tab" role="tab" type="button" [class.active]="tab() === 'riesgo'" (click)="tab.set('riesgo')">Risk (Monte Carlo)</button>
+      <button class="tab" role="tab" type="button" [class.active]="tab() === 'propuesta'" (click)="tab.set('propuesta')">Proposal</button>
+    </div>
+
+    @switch (tab()) {
+      @case ('modulos') {
+        <app-quote-items [quote]="q" (changed)="apply($event)" />
+        <div class="card">
+          <h2>Similar quotes</h2>
+          @if (similar().length === 0) {
+            <p class="subtle small">There are no similar previous quotes yet.</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Project</th><th>Status</th><th class="num">Total</th><th class="num">Similarity</th></tr></thead>
+                <tbody>
+                  @for (s of similar(); track s.id) {
+                    <tr>
+                      <td><a [routerLink]="['/cotizaciones', s.id]">{{ code(s.id) }} · {{ s.titulo }}</a></td>
+                      <td><span class="badge" [class]="s.estado">{{ statusLabel(s.estado) }}</span></td>
+                      <td class="num money">{{ cop(s.total) }}</td>
+                      <td class="num">{{ (s.similitud * 100).toFixed(1) }}%</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <p class="small subtle" style="margin-top: 8px">They serve as a price reference (TF-IDF and cosine similarity on the scope).</p>
+          }
+        </div>
+      }
+      @case ('finanzas') {
+        <app-quote-finance [quote]="q" />
+      }
+      @case ('riesgo') {
+        <app-simulation-panel [quote]="q" />
+      }
+      @case ('propuesta') {
+        <app-quote-proposal [quote]="q" (changed)="load()" />
+      }
+    }
+  }
+</section>
