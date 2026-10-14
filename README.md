@@ -1,59 +1,50 @@
-# CotizadorFront
+# AI Quoter · Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.26.
+Web interface for the **AI Quotation Engine** (Programación Orientada a la Web, UCC Pasto).
+Angular 21 · TypeScript · FastAPI + Neon (PostgreSQL) in the cloud · Vercel + Render.
 
-## Development server
+## What it does
+- Registers clients and hourly rates per role (in COP).
+- Turns a project description into modules with optimistic / most likely / pessimistic hours (PERT).
+- Calculates the price: direct cost, contingency, margin, discount, VAT, schedule and payment milestones.
+- Simulates the risk with Monte Carlo (P50 / P80 / P90 and probability of exceeding the hours).
+- Generates the commercial proposal in Markdown (read it, download it and print it).
+- Status flow: draft → sent → accepted / rejected.
 
-To start a local development server, run:
+## The three workers
+| Worker | File | Purpose |
+| --- | --- | --- |
+| Web Worker | `src/app/core/workers/simulation.worker.ts` | Monte Carlo off the main thread; the screen does not freeze. |
+| Shared Worker | `public/shared-worker.js` | Notifies every open tab when one of them changes data. |
+| Service Worker | `public/sw.js` | Network-first cache of GET requests: the app keeps showing data while offline. |
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+## Run locally
+Start the backend first (in its folder, with its `.env`): `uvicorn main:app --reload` → http://127.0.0.1:8000/docs.
 
 ```bash
-ng build
+npm install --legacy-peer-deps
+npm start            # http://localhost:4200  (expects the API at http://127.0.0.1:8000)
+npm test             # unit tests
+npm run build        # production build in dist/cotizador-front/browser
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Order of use: first **Rates** (without them the analysis returns 409), then a **Client**, then **New quote** →
+**Analyze with AI**. For quick data use **Load demo data** on the Dashboard.
 
-## Running unit tests
+Scope descriptions must be written in Spanish: the backend's module detector uses Spanish keywords.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Configuration
+The production backend URL is in `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
 
-```bash
-ng test
+## Deployment
+Vercel (Angular preset, output `dist/cotizador-front/browser`). `vercel.json` rewrites routes to `index.html`
+and prevents caching `sw.js` and `shared-worker.js`.
+
+## Structure
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
+src/app/
+  core/       config, models, HTTP services, utilities and workers
+  shared/     notifications and connection status
+  features/   dashboard, quotes, quote-new, quote-detail, clients, tariffs
+public/       sw.js and shared-worker.js
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
