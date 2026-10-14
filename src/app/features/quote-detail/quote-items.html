@@ -1,0 +1,97 @@
+<div class="card">
+  <div class="row" style="margin-bottom: 12px">
+    <h2 style="margin: 0">Modules and hours</h2>
+    <span class="spacer"></span>
+    @if (editable) {
+      <button class="btn small" type="button" (click)="adding.set(!adding())">{{ adding() ? 'Close' : 'Add module' }}</button>
+    }
+  </div>
+
+  @if (adding()) {
+    <form class="form notice" [formGroup]="addForm" (ngSubmit)="add()" style="margin-bottom: 14px">
+      <div class="two">
+        <label>Module name <input formControlName="nombre" placeholder="e.g. WhatsApp integration" /></label>
+        <label>
+          Complexity
+          <select formControlName="complejidad">
+            @for (c of complexities; track c) { <option [value]="c">{{ level(c) }}</option> }
+          </select>
+        </label>
+      </div>
+      <label>Most likely hours <input type="number" min="0.5" step="0.5" formControlName="horas_probable" /></label>
+      <div><button class="btn primary" type="submit" [disabled]="busy()">Add and recalculate</button></div>
+    </form>
+  }
+
+  @if (quote().items.length === 0) {
+    <div class="empty">This quote has no modules yet. Click <strong>Analyze with AI</strong>.</div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th><th>Complexity</th>
+            <th class="num">Optimistic</th><th class="num">Most likely</th><th class="num">Pessimistic</th><th class="num">Expected</th>
+            <th>Split</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of quote().items; track item.id) {
+            @if (editingId() === item.id) {
+              <tr>
+                <td colspan="8">
+                  <form class="form" [formGroup]="editForm" (ngSubmit)="saveEdit(item)">
+                    <div class="two">
+                      <label>Name <input formControlName="nombre" /></label>
+                      <label>
+                        Complexity
+                        <select formControlName="complejidad">
+                          @for (c of complexities; track c) { <option [value]="c">{{ level(c) }}</option> }
+                        </select>
+                      </label>
+                    </div>
+                    <label>Most likely hours <input type="number" min="0.5" step="0.5" formControlName="horas_probable" /></label>
+                    <div class="row">
+                      <button class="btn primary small" type="submit" [disabled]="busy()">Save</button>
+                      <button class="btn small" type="button" (click)="cancelEdit()">Cancel</button>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+            } @else {
+              <tr>
+                <td>
+                  <strong>{{ item.nombre }}</strong>
+                  <div class="small subtle">{{ item.categoria }} · <span class="badge" [class]="item.origen">{{ item.origen === 'ia' ? 'AI' : 'Manual' }}</span></div>
+                  <div class="small subtle">{{ item.motivos }}</div>
+                </td>
+                <td><span class="badge" [class]="item.complejidad">{{ level(item.complejidad) }}</span></td>
+                <td class="num">{{ num(item.horas_optimista) }}</td>
+                <td class="num">{{ num(item.horas_probable) }}</td>
+                <td class="num">{{ num(item.horas_pesimista) }}</td>
+                <td class="num"><strong>{{ num(item.horas_esperadas) }}</strong></td>
+                <td>
+                  <div class="chips">
+                    @for (r of roles(item); track r.role) { <span class="chip">{{ r.role }} {{ r.pct }}%</span> }
+                  </div>
+                </td>
+                <td>
+                  @if (editable) {
+                    <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                      <button class="btn small" type="button" (click)="startEdit(item)">Edit</button>
+                      <button class="btn small danger" type="button" (click)="remove(item)">Remove</button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="small subtle" style="margin-top: 10px">
+      Expected hours = (optimistic + 4 × most likely + pessimistic) / 6 (three-point PERT estimate).
+      @if (!editable) { The quote is no longer a draft: it cannot be edited. }
+    </p>
+  }
+</div>
