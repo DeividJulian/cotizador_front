@@ -1,0 +1,94 @@
+<div class="card">
+  <div class="row" style="margin-bottom: 8px">
+    <div>
+      <p class="eyebrow" style="margin: 0">Web Worker · Monte Carlo simulation</p>
+      <h2 style="margin: 0">How certain is this price?</h2>
+    </div>
+    <span class="spacer"></span>
+    <div class="chip" [class.good]="fps() >= 40" [class.bad]="fps() < 20">UI: <strong>{{ fps() }} FPS</strong></div>
+  </div>
+
+  <p class="small subtle">
+    The quote uses the PERT average, but each module can turn out better or worse. Here thousands of
+    "possible projects" are drawn to measure how many hours and how much money cover 50%, 80% and 90% of the cases.
+  </p>
+
+  @if (!canRun()) {
+    <div class="empty" style="margin-top: 12px">Analyze the quote to be able to simulate it.</div>
+  } @else {
+    <div class="row" style="margin: 14px 0">
+      <label style="min-width: 190px">
+        Simulations
+        <select [ngModel]="runs()" (ngModelChange)="runs.set(+$event)">
+          <option [ngValue]="10000">10,000</option>
+          <option [ngValue]="100000">100,000</option>
+          <option [ngValue]="500000">500,000</option>
+          <option [ngValue]="2000000">2,000,000</option>
+        </select>
+      </label>
+      <button class="btn primary" type="button" (click)="run('worker')" [disabled]="simulation.running() || !simulation.workerSupported">
+        Simulate with Web Worker
+      </button>
+      <button class="btn" type="button" (click)="run('main')" [disabled]="simulation.running()">
+        Simulate on the main thread (compare)
+      </button>
+      @if (simulation.running() && simulation.mode() === 'worker') {
+        <button class="btn danger" type="button" (click)="cancel()">Cancel</button>
+      }
+      @if (simulation.running()) {
+        <span class="row small"><span class="spinner"></span>
+          {{ simulation.mode() === 'worker' ? 'Processing in the worker…' : 'Processing on the main thread (the screen will freeze)…' }}
+        </span>
+      }
+    </div>
+
+    @if (simulation.running()) {
+      <div class="bar"><span [style.width.%]="percent()"></span></div>
+    }
+  }
+
+  @if (lastRun(); as r) {
+    <div class="grid cols-4" style="margin-top: 14px">
+      <div class="stat"><span class="value">{{ num(r.output.p50) }} h</span><span class="label">Median (P50) · {{ cop(r.output.priceP50) }}</span></div>
+      <div class="stat"><span class="value">{{ num(r.output.p80) }} h</span><span class="label">P80 recommended · {{ cop(r.output.priceP80) }}</span></div>
+      <div class="stat"><span class="value">{{ num(r.output.p90) }} h</span><span class="label">P90 conservative · {{ cop(r.output.priceP90) }}</span></div>
+      <div class="stat">
+        <span class="value" [style.color]="r.output.probOverPlan > 0.5 ? 'var(--bad)' : 'var(--good)'">{{ (r.output.probOverPlan * 100).toFixed(0) }}%</span>
+        <span class="label">Probability of exceeding the quoted hours</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px">
+      <div class="histogram">
+        @for (b of r.output.histogram; track $index) {
+          <span [class.over]="b.overPlan" [style.height.%]="(b.count / maxBin()) * 100" [title]="num(b.from) + ' – ' + num(b.to) + ' h'"></span>
+        }
+      </div>
+      <p class="small subtle" style="margin-top: 6px">
+        Distribution of total hours ({{ num(r.output.runs) }} simulations). In red, the scenarios that exceed the quoted hours.
+        Observed range: {{ num(r.output.histogram[0].from) }} – {{ num(r.output.histogram[r.output.histogram.length - 1].to) }} h.
+      </p>
+    </div>
+  }
+
+  @if (log().length) {
+    <div class="table-wrap" style="margin-top: 16px">
+      <table>
+        <thead>
+          <tr><th>Mode</th><th class="num">Simulations</th><th class="num">Compute time</th><th class="num">Longest screen freeze</th></tr>
+        </thead>
+        <tbody>
+          @for (entry of log(); track $index) {
+            <tr>
+              <td>{{ entry.mode === 'worker' ? 'Web Worker' : 'Main thread' }}</td>
+              <td class="num">{{ num(entry.runs) }}</td>
+              <td class="num">{{ entry.elapsedMs }} ms</td>
+              <td class="num" [style.color]="entry.longestFreezeMs > 200 ? 'var(--bad)' : 'var(--good)'">{{ entry.longestFreezeMs }} ms</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <p class="small subtle" style="margin-top: 8px">A freeze longer than 200 ms already feels like a stuck interface.</p>
+    </div>
+  }
+</div>
