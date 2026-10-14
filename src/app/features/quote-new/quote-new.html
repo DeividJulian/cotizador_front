@@ -1,0 +1,103 @@
+<section class="page">
+  <a class="small" routerLink="/cotizaciones">← Back to quotes</a>
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Step 1 · describe the project</p>
+      <h1>New quote</h1>
+    </div>
+  </div>
+
+  <form class="grid cols-2" [formGroup]="form" (ngSubmit)="save()">
+    <div class="card form">
+      <h2>Project details</h2>
+
+      <label>
+        Client
+        <select formControlName="cliente_id">
+          <option [ngValue]="0">{{ loadingClients() ? 'Loading…' : 'Choose a client…' }}</option>
+          @for (c of clients(); track c.id) {
+            <option [ngValue]="c.id">{{ c.nombre }}{{ c.empresa ? ' · ' + c.empresa : '' }}</option>
+          }
+        </select>
+        @if (form.controls.cliente_id.touched && form.controls.cliente_id.invalid) {
+          <span class="error-text">Choose a client. If it doesn't exist, create it in the Clients section.</span>
+        }
+      </label>
+
+      <label>
+        Project title
+        <input formControlName="titulo" placeholder="e.g. Online store for a coffee shop" />
+        @if (form.controls.titulo.touched && form.controls.titulo.invalid) {
+          <span class="error-text">Enter a title of at least 3 characters.</span>
+        }
+      </label>
+
+      <label>
+        Scope description
+        <textarea formControlName="descripcion_alcance" rows="9"
+          placeholder="Describe what the client needs, in Spanish: catálogo, pagos en línea, panel de administración, reportes, inicio de sesión…"></textarea>
+        <span class="hint">
+          The more detail, the more accurate the estimate. Minimum 10 characters. Write it in Spanish: the module
+          detector uses Spanish keywords.
+        </span>
+        @if (form.controls.descripcion_alcance.touched && form.controls.descripcion_alcance.invalid) {
+          <span class="error-text">Describe the scope with at least 10 characters.</span>
+        }
+      </label>
+
+      <div>
+        <button class="btn" type="button" (click)="runPreview()" [disabled]="previewing()">
+          {{ previewing() ? 'Analyzing…' : 'Preview analysis' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="grid" style="align-content: start">
+      <div class="card form">
+        <h2>Financial parameters</h2>
+        <div class="two">
+          <label>Margin (%) <input type="number" min="0" max="200" formControlName="margen_pct" /></label>
+          <label>Contingency (%) <input type="number" min="0" max="100" formControlName="contingencia_pct" /></label>
+        </div>
+        <div class="two">
+          <label>Discount (%) <input type="number" min="0" max="50" formControlName="descuento_pct" /></label>
+          <label>VAT (%) <input type="number" min="0" max="30" formControlName="iva_pct" /></label>
+        </div>
+        <div class="row">
+          <button class="btn primary" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Creating and analyzing…' : 'Create and analyze with AI' }}
+          </button>
+        </div>
+        <p class="small subtle">It is created as a draft and the system calculates modules, hours and price automatically.</p>
+      </div>
+
+      @if (preview(); as p) {
+        <div class="card">
+          <h2>What the analysis detected</h2>
+          <div class="row small" style="margin-bottom: 10px">
+            <span class="chip">{{ p.analisis.modulos.length }} modules</span>
+            <span class="chip">{{ num(p.estimacion.horas_esperadas) }} expected hours</span>
+            <span class="chip">{{ level(p.analisis.confianza) }} confidence</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Module</th><th>Complexity</th><th class="num">Hours</th></tr></thead>
+              <tbody>
+                @for (item of p.items; track item.nombre) {
+                  <tr>
+                    <td>{{ item.nombre }}</td>
+                    <td><span class="badge" [class]="item.complejidad">{{ level(item.complejidad) }}</span></td>
+                    <td class="num">{{ num(item.horas_esperadas) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @for (warning of p.analisis.advertencias; track warning) {
+            <p class="small" style="color: var(--warn); margin-top: 8px">{{ warning }}</p>
+          }
+        </div>
+      }
+    </div>
+  </form>
+</section>
