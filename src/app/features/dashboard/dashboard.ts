@@ -69,13 +69,13 @@ export class Dashboard {
 
   protected loadDemo(): void {
     const hasData = (this.stats()?.total_cotizaciones ?? 0) > 0;
-    if (hasData && !confirm('There is already data. This DELETES everything and loads the demo data. Continue?')) return;
+    if (hasData && !confirm('You already have quotes. This DELETES all your quotes and loads the examples. Continue?')) return;
 
     this.loadingDemo.set(true);
     this.statsService.loadDemo(hasData).subscribe({
       next: () => {
         this.loadingDemo.set(false);
-        this.toast.ok('Demo data loaded');
+        this.toast.ok('Example quotes loaded');
         this.load();
       },
       error: (err) => {

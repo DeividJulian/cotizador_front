@@ -14,7 +14,7 @@
         <p class="eyebrow">{{ code(q.id) }} · <span class="badge" [class]="q.estado">{{ statusLabel(q.estado) }}</span></p>
         <h1>{{ q.titulo }}</h1>
         <p class="subtle small">
-          {{ client()?.nombre ?? 'Client #' + q.cliente_id }}{{ client()?.empresa ? ' · ' + client()?.empresa : '' }}
+          {{ forWhom(q) }}
         </p>
       </div>
       <div class="stat" style="text-align: right">
@@ -56,6 +56,10 @@
           Title
           <input formControlName="titulo" />
         </label>
+        <div class="two">
+          <label>Who is it for? (optional) <input formControlName="cliente_nombre" /></label>
+          <label>Company (optional) <input formControlName="cliente_empresa" /></label>
+        </div>
         <label>
           Scope description
           <textarea formControlName="descripcion_alcance" rows="6"></textarea>

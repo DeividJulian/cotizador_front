@@ -1,11 +1,10 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import {
-  Client,
   NEXT_STATUSES,
   Quote,
   QuoteStatus,
@@ -14,7 +13,6 @@ import {
   quoteCode,
   statusLabel,
 } from '../../core/models';
-import { ClientService } from '../../core/services/client.service';
 import { QuoteService } from '../../core/services/quote.service';
 import { ToastService } from '../../core/services/toast.service';
 import { cop, num } from '../../core/utils/format';
@@ -44,7 +42,6 @@ export class QuoteDetail {
   readonly id = input.required<string>();
 
   private readonly quotes = inject(QuoteService);
-  private readonly clients = inject(ClientService);
   private readonly toast = inject(ToastService);
   private readonly sync = inject(TabSyncService);
   private readonly router = inject(Router);
@@ -59,7 +56,6 @@ export class QuoteDetail {
   protected readonly actions = STATUS_ACTIONS;
 
   protected readonly quote = signal<Quote | null>(null);
-  protected readonly client = signal<Client | null>(null);
   protected readonly similar = signal<SimilarQuote[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -71,6 +67,8 @@ export class QuoteDetail {
 
   protected readonly form = this.fb.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
+    cliente_nombre: ['', [Validators.maxLength(100)]],
+    cliente_empresa: ['', [Validators.maxLength(100)]],
     descripcion_alcance: ['', [Validators.required, Validators.minLength(10)]],
     margen_pct: [30, [Validators.required, Validators.min(0), Validators.max(200)]],
     contingencia_pct: [10, [Validators.required, Validators.min(0), Validators.max(100)]],
@@ -92,13 +90,10 @@ export class QuoteDetail {
         this.apply(quote);
         this.error.set(null);
         this.loading.set(false);
-        forkJoin({
-          client: this.clients.get(quote.cliente_id).pipe(catchError(() => of(null))),
-          similar: this.quotes.similar(quote.id).pipe(catchError(() => of([] as SimilarQuote[]))),
-        }).subscribe(({ client, similar }) => {
-          this.client.set(client);
-          this.similar.set(similar);
-        });
+        this.quotes
+          .similar(quote.id)
+          .pipe(catchError(() => of([] as SimilarQuote[])))
+          .subscribe((similar) => this.similar.set(similar));
       },
       error: (err) => {
         this.error.set(errorMessage(err));
@@ -107,11 +102,18 @@ export class QuoteDetail {
     });
   }
 
+  protected forWhom(quote: Quote): string {
+    const who = [quote.cliente_nombre, quote.cliente_empresa].filter(Boolean).join(' · ');
+    return who ? `For ${who}` : 'Your project';
+  }
+
   /** Actualiza la pantalla con la cotización que devolvió el servidor. */
   protected apply(quote: Quote): void {
     this.quote.set(quote);
     this.form.reset({
       titulo: quote.titulo,
+      cliente_nombre: quote.cliente_nombre ?? '',
+      cliente_empresa: quote.cliente_empresa ?? '',
       descripcion_alcance: quote.descripcion_alcance,
       margen_pct: quote.margen_pct,
       contingencia_pct: quote.contingencia_pct,

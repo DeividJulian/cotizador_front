@@ -12,25 +12,23 @@
       <h2>Project details</h2>
 
       <label>
-        Client
-        <select formControlName="cliente_id">
-          <option [ngValue]="0">{{ loadingClients() ? 'Loading…' : 'Choose a client…' }}</option>
-          @for (c of clients(); track c.id) {
-            <option [ngValue]="c.id">{{ c.nombre }}{{ c.empresa ? ' · ' + c.empresa : '' }}</option>
-          }
-        </select>
-        @if (form.controls.cliente_id.touched && form.controls.cliente_id.invalid) {
-          <span class="error-text">Choose a client. If it doesn't exist, create it in the Clients section.</span>
-        }
-      </label>
-
-      <label>
         Project title
         <input formControlName="titulo" placeholder="e.g. Online store for a coffee shop" />
         @if (form.controls.titulo.touched && form.controls.titulo.invalid) {
           <span class="error-text">Enter a title of at least 3 characters.</span>
         }
       </label>
+
+      <div class="two">
+        <label>
+          Who is it for? (optional)
+          <input formControlName="cliente_nombre" placeholder="Your client's name" />
+        </label>
+        <label>
+          Company (optional)
+          <input formControlName="cliente_empresa" />
+        </label>
+      </div>
 
       <label>
         Scope description

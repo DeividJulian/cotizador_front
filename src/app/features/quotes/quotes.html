@@ -1,8 +1,8 @@
 <section class="page">
   <div class="page-head">
     <div>
-      <p class="eyebrow">Commercial proposals</p>
-      <h1>Quotes</h1>
+      <p class="eyebrow">Your projects</p>
+      <h1>My quotes</h1>
     </div>
     <div class="row">
       <label style="min-width: 180px">
@@ -26,19 +26,19 @@
   } @else if (loading()) {
     <div class="card"><div class="skeleton"></div></div>
   } @else if (quotes().length === 0) {
-    <div class="empty">There are no quotes with this filter. Create a new one or load the demo data from the Dashboard.</div>
+    <div class="empty">There are no quotes with this filter. Create a new one or load the examples from the Dashboard.</div>
   } @else {
     <div class="card table-wrap">
       <table>
         <thead>
-          <tr><th>Code</th><th>Project</th><th>Client</th><th>Status</th><th class="num">Total</th><th>Updated</th></tr>
+          <tr><th>Code</th><th>Project</th><th>For</th><th>Status</th><th class="num">Total</th><th>Updated</th></tr>
         </thead>
         <tbody>
           @for (q of quotes(); track q.id) {
             <tr>
               <td><a [routerLink]="['/cotizaciones', q.id]">{{ code(q.id) }}</a></td>
               <td><a [routerLink]="['/cotizaciones', q.id]"><strong>{{ q.titulo }}</strong></a></td>
-              <td>{{ clientName(q.cliente_id) }}</td>
+              <td class="small">{{ forWhom(q) }}</td>
               <td><span class="badge" [class]="q.estado">{{ statusLabels[q.estado] }}</span></td>
               <td class="num money">{{ q.total ? cop(q.total) : '—' }}</td>
               <td class="small subtle">{{ shortDate(q.actualizada_en) }}</td>

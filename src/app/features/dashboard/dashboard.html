@@ -1,13 +1,14 @@
 <section class="page">
   <div class="page-head">
     <div>
-      <p class="eyebrow">Sales dashboard</p>
-      <h1>Software project quoter</h1>
+      <p class="eyebrow">Your dashboard</p>
+      <h1>How much should you charge?</h1>
+      <p class="subtle small">Describe a project and the AI estimates hours, price and proposal.</p>
     </div>
     <div class="row">
       <a class="btn primary" routerLink="/cotizaciones/nueva">New quote</a>
       <button class="btn" type="button" (click)="loadDemo()" [disabled]="loadingDemo()">
-        {{ loadingDemo() ? 'Loading…' : 'Load demo data' }}
+        {{ loadingDemo() ? 'Loading…' : 'Load examples' }}
       </button>
     </div>
   </div>
@@ -34,7 +35,7 @@
 
     @if (s.total_cotizaciones === 0) {
       <div class="empty">
-        There are no quotes yet. Click <strong>Load demo data</strong> or create the first one.
+        You have no quotes yet. Click <strong>New quote</strong> to price your first project, or <strong>Load examples</strong> to see how it works.
       </div>
     } @else {
       <div class="grid cols-2">
