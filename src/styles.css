@@ -158,4 +158,3 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .code-input { font-family: var(--mono); font-size: 26px; letter-spacing: 10px; text-align: center; }
 .quote-card { display: grid; gap: 10px; color: var(--text); }
 .quote-card:hover { text-decoration: none; border-color: var(--accent); }
-.google-slot { display: grid; justify-items: center; gap: 10px; min-height: 48px; padding: 8px 0; }

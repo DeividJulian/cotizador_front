@@ -22,7 +22,7 @@ function session(secondsFromNow = 3600): Session {
   return {
     token: fakeToken(secondsFromNow),
     usuario: {
-      id: 1, nombre: 'Ana', email: 'ana@pyme.com', foto_url: null,
+      id: 1, nombre: 'Ana', email: 'ana@pyme.com',
       creado_en: '2026-10-01T00:00:00Z', ultimo_acceso: null,
     },
   };
@@ -52,7 +52,7 @@ function runGuard(guard: typeof authGuard): boolean | UrlTree {
 
 const path = (result: boolean | UrlTree) => (result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : result);
 
-describe('sesión con Google e interceptor', () => {
+describe('sesión por código e interceptor', () => {
   beforeEach(() => localStorage.clear());
 
   it('reconoce tokens vencidos y vigentes', () => {
@@ -61,15 +61,25 @@ describe('sesión con Google e interceptor', () => {
     expect(tokenExpired('no-es-un-jwt')).toBe(true);
   });
 
-  it('canjea la credencial de Google por la sesión de la app y la guarda', () => {
+  it('pide el código al correo sin crear sesión todavía', () => {
+    setup();
+    const auth = TestBed.inject(AuthService);
+    auth.requestCode('ana@pyme.com').subscribe();
+    const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/login`);
+    expect(request.request.body).toEqual({ email: 'ana@pyme.com' });
+    request.flush({ mensaje: 'sent', email: 'ana@pyme.com' });
+    expect(auth.isLoggedIn()).toBe(false);
+  });
+
+  it('canjea el código por la sesión de la app y la guarda', () => {
     setup();
     const auth = TestBed.inject(AuthService);
     const expected = session();
-    auth.loginWithGoogle('credencial-de-google').subscribe();
+    auth.verify('ana@pyme.com', '123456').subscribe();
 
-    const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/google`);
+    const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/verificar`);
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ credencial: 'credencial-de-google' });
+    expect(request.request.body).toEqual({ email: 'ana@pyme.com', codigo: '123456' });
     request.flush(expected);
 
     expect(auth.isLoggedIn()).toBe(true);
@@ -77,13 +87,13 @@ describe('sesión con Google e interceptor', () => {
     expect(JSON.parse(localStorage.getItem('cotizador.session')!).token).toBe(expected.token);
   });
 
-  it('si Google o el backend rechazan la credencial no queda sesión', () => {
+  it('un código incorrecto no deja sesión', () => {
     setup();
     const auth = TestBed.inject(AuthService);
-    auth.loginWithGoogle('credencial-invalida').subscribe({ error: () => undefined });
+    auth.verify('ana@pyme.com', '000000').subscribe({ error: () => undefined });
     TestBed.inject(HttpTestingController)
-      .expectOne(`${API_URL}/auth/google`)
-      .flush({ detail: 'Google could not verify your account' }, { status: 401, statusText: 'Unauthorized' });
+      .expectOne(`${API_URL}/auth/verificar`)
+      .flush({ detail: 'Incorrect code' }, { status: 400, statusText: 'Bad Request' });
     expect(auth.isLoggedIn()).toBe(false);
     expect(localStorage.getItem('cotizador.session')).toBeNull();
   });

@@ -1,0 +1,32 @@
+<p class="subtle small">
+  We sent a 6-digit code to <strong>{{ email() }}</strong>. It expires in 10 minutes.
+</p>
+
+<form class="form" (submit)="verify($event)">
+  <label>
+    Verification code
+    <input
+      class="code-input"
+      [formControl]="code"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+      placeholder="000000"
+    />
+    @if (code.touched && code.invalid) {
+      <span class="error-text">Enter the 6 digits of the code.</span>
+    }
+  </label>
+  <button class="btn primary" type="submit" [disabled]="verifying()">
+    {{ verifying() ? 'Verifying…' : 'Verify and enter' }}
+  </button>
+</form>
+
+<div class="row small">
+  <button class="btn link" type="button" (click)="resend()" [disabled]="cooldown() > 0 || resending()">
+    {{ cooldown() > 0 ? 'Resend code in ' + cooldown() + ' s' : resending() ? 'Sending…' : 'Resend code' }}
+  </button>
+  <span class="spacer"></span>
+  <button class="btn link" type="button" (click)="back.emit()">Use another email</button>
+</div>
+<p class="hint">Didn't get it? Check your spam folder.</p>

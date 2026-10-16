@@ -4,6 +4,7 @@ import { authGuard, guestGuard } from './core/auth/guards';
 
 export const routes: Routes = [
   { path: 'login', title: 'Log in · AI Quoter', canActivate: [guestGuard], loadComponent: () => import('./features/auth/login').then((m) => m.Login) },
+  { path: 'registro', title: 'Sign up · AI Quoter', canActivate: [guestGuard], loadComponent: () => import('./features/auth/register').then((m) => m.Register) },
 
   { path: '', title: 'Dashboard · AI Quoter', canActivate: [authGuard], loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard) },
   { path: 'cotizaciones', title: 'My quotes · AI Quoter', canActivate: [authGuard], loadComponent: () => import('./features/quotes/quotes').then((m) => m.Quotes) },

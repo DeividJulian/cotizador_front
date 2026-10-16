@@ -11,9 +11,6 @@
     </nav>
     <span class="spacer"></span>
     <div class="account">
-      @if (user.foto_url) {
-        <img class="avatar" [src]="user.foto_url" alt="" referrerpolicy="no-referrer" />
-      }
       <span class="small"><strong>{{ user.nombre }}</strong></span>
       <button class="btn small" type="button" (click)="auth.logout()">Log out</button>
     </div>

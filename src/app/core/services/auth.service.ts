@@ -3,9 +3,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
-import '../auth/google-identity'; // declara window.google
 import { API_URL } from '../config/api.config';
-import { Session, User } from '../models';
+import { CodeSent, RegisterInput, Session, User } from '../models';
 
 const STORAGE_KEY = 'cotizador.session';
 
@@ -29,8 +28,8 @@ function readStoredSession(): Session | null {
 }
 
 /**
- * Sesión con Google: el botón de Google entrega un ID token, el backend lo verifica y responde con el token de
- * la app. Se guarda en localStorage para que la sesión (y el progreso) sobreviva a recargar la página.
+ * Sesión sin contraseña: el usuario pide un código de 6 dígitos por correo y lo canjea por un token.
+ * Se guarda en localStorage para que la sesión (y el progreso) sobreviva a recargar la página.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -44,11 +43,20 @@ export class AuthService {
   readonly token = computed(() => this.session()?.token ?? null);
   readonly isLoggedIn = computed(() => this.session() !== null);
 
-  loginWithGoogle(credencial: string): Observable<Session> {
-    return this.http.post<Session>(`${this.url}/google`, { credencial }).pipe(tap((session) => this.store(session)));
+  register(input: RegisterInput): Observable<CodeSent> {
+    return this.http.post<CodeSent>(`${this.url}/registro`, input);
   }
 
-  /** Confirma con el backend que la sesión guardada sigue siendo válida y refresca nombre y foto. */
+  /** Envía un código de acceso al correo (sirve también para reenviar el de registro). */
+  requestCode(email: string): Observable<CodeSent> {
+    return this.http.post<CodeSent>(`${this.url}/login`, { email });
+  }
+
+  verify(email: string, codigo: string): Observable<Session> {
+    return this.http.post<Session>(`${this.url}/verificar`, { email, codigo }).pipe(tap((session) => this.store(session)));
+  }
+
+  /** Confirma con el backend que la sesión guardada sigue siendo válida. */
   refreshProfile(): void {
     const current = this.session();
     if (!current) return;
@@ -65,8 +73,6 @@ export class AuthService {
     } catch {
       // almacenamiento bloqueado: basta con olvidar la sesión en memoria
     }
-    // Que Google no vuelva a entrar solo con la misma cuenta
-    window.google?.accounts?.id.disableAutoSelect();
     // Las respuestas guardadas por el Service Worker son de este usuario: no deben verse con otra cuenta
     if (typeof caches !== 'undefined') {
       void caches.keys().then((names) => names.filter((n) => n.startsWith('cot-api')).forEach((n) => caches.delete(n)));

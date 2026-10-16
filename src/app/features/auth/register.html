@@ -1,0 +1,33 @@
+<section class="page auth-page">
+  <div class="card form">
+    <p class="eyebrow">AI Quoter</p>
+    @if (sentTo(); as email) {
+      <h1>Verify your email</h1>
+      <app-code-step [email]="email" (verified)="enter()" (back)="sentTo.set(null)" />
+    } @else {
+      <h1>Create your account</h1>
+      <p class="subtle small">
+        Price your software projects with AI and keep them all in your account. We will email you a 6-digit code to
+        verify that the address is yours.
+      </p>
+      <form class="form" [formGroup]="form" (ngSubmit)="register()">
+        <label>
+          Full name
+          <input formControlName="nombre" autocomplete="name" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) {
+            <span class="error-text">Enter your name (at least 2 characters).</span>
+          }
+        </label>
+        <label>
+          Email
+          <input type="email" formControlName="email" autocomplete="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <span class="error-text">Enter a valid email.</span>
+          }
+        </label>
+        <button class="btn primary" type="submit" [disabled]="sending()">{{ sending() ? 'Sending…' : 'Create account' }}</button>
+      </form>
+      <p class="small subtle">Already have an account? <a routerLink="/login">Log in</a></p>
+    }
+  </div>
+</section>
