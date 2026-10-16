@@ -171,6 +171,23 @@ export interface SimilarQuote {
   similitud: number;
 }
 
+/** Vista compacta (GET /cotizaciones/{id}/resumen): lo único que ve un cliente, sin costos internos. */
+export interface QuoteOverview {
+  id: number;
+  titulo: string;
+  cliente: string;
+  estado: QuoteStatus;
+  modulos: number;
+  horas_esperadas: number;
+  rango_horas: [number, number];
+  confianza: string | null;
+  duracion_semanas: number;
+  total: number;
+  tiene_propuesta: boolean;
+}
+
+export type ClientAnswer = 'aceptada' | 'rechazada';
+
 export interface ScopeEstimate {
   analisis: Analysis;
   items: Omit<QuoteItem, 'id'>[];

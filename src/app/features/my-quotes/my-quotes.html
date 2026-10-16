@@ -1,0 +1,41 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Client area</p>
+      <h1>My quotes</h1>
+      <p class="subtle small">Hi {{ auth.user()?.nombre }}. Here are the proposals we have sent you.</p>
+    </div>
+  </div>
+
+  @if (error(); as message) {
+    <div class="notice error row">
+      <span>{{ message }}</span><span class="spacer"></span>
+      <button class="btn small" type="button" (click)="load()">Retry</button>
+    </div>
+  } @else if (loading()) {
+    <div class="card"><div class="skeleton"></div></div>
+  } @else if (list().length === 0) {
+    <div class="empty">You have no quotes yet. When we send you a proposal, it will appear here.</div>
+  } @else {
+    <div class="grid cols-2">
+      @for (q of list(); track q.id) {
+        <a class="card quote-card" [routerLink]="['/mis-cotizaciones', q.id]">
+          <div class="row small">
+            <span class="subtle">{{ code(q.id) }}</span>
+            <span class="spacer"></span>
+            <span class="badge" [class]="q.estado">{{ statusLabel(q.estado) }}</span>
+          </div>
+          <h2>{{ q.titulo }}</h2>
+          <div class="row">
+            <span class="money" style="font-size: 22px">{{ cop(q.total) }}</span>
+            <span class="spacer"></span>
+            <span class="small subtle">Updated {{ shortDate(q.actualizada_en) }}</span>
+          </div>
+          @if (q.estado === 'enviada') {
+            <span class="small" style="color: var(--warn)">Waiting for your answer</span>
+          }
+        </a>
+      }
+    </div>
+  }
+</section>

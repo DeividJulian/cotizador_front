@@ -1,0 +1,61 @@
+<section class="page">
+  <a class="small" routerLink="/mis-cotizaciones">← My quotes</a>
+
+  @if (error(); as message) {
+    <div class="notice error row">
+      <span>{{ message }}</span><span class="spacer"></span>
+      <button class="btn small" type="button" (click)="load()">Retry</button>
+    </div>
+  } @else if (loading()) {
+    <div class="card"><div class="skeleton"></div></div>
+  } @else if (overview(); as q) {
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">{{ code(q.id) }} · <span class="badge" [class]="q.estado">{{ statusLabel(q.estado) }}</span></p>
+        <h1>{{ q.titulo }}</h1>
+      </div>
+      <div class="stat" style="text-align: right">
+        <span class="value" style="color: var(--accent)">{{ cop(q.total) }}</span>
+        <span class="label">VAT included</span>
+      </div>
+    </div>
+
+    <div class="grid cols-4">
+      <div class="card stat"><span class="value">{{ q.modulos }}</span><span class="label">Functional modules</span></div>
+      <div class="card stat"><span class="value">{{ num(q.horas_esperadas) }} h</span><span class="label">Estimated effort</span></div>
+      <div class="card stat"><span class="value">{{ q.duracion_semanas }}</span><span class="label">Weeks</span></div>
+    </div>
+
+    @if (q.estado === 'enviada') {
+      <div class="card row">
+        <div>
+          <h2>What do you think of this proposal?</h2>
+          <p class="small subtle">Read it below and let us know. Your answer is final.</p>
+        </div>
+        <span class="spacer"></span>
+        <button class="btn primary" type="button" (click)="answer('aceptada')" [disabled]="busy()">Accept proposal</button>
+        <button class="btn danger" type="button" (click)="answer('rechazada')" [disabled]="busy()">Reject</button>
+      </div>
+    } @else {
+      <div class="notice">
+        You {{ q.estado === 'aceptada' ? 'accepted' : 'rejected' }} this proposal. Thank you for your answer.
+      </div>
+    }
+
+    <div class="card">
+      <div class="row" style="margin-bottom: 12px">
+        <h2 style="margin: 0">Commercial proposal</h2>
+        <span class="spacer"></span>
+        @if (proposal()) {
+          <button class="btn small" type="button" (click)="download()">Download .md</button>
+          <button class="btn small" type="button" (click)="print()">Print</button>
+        }
+      </div>
+      @if (proposal()) {
+        <div class="markdown" [innerHTML]="html()"></div>
+      } @else {
+        <div class="empty">The proposal document is not available.</div>
+      }
+    </div>
+  }
+</section>

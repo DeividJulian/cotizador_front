@@ -4,10 +4,12 @@ import { Observable } from 'rxjs';
 
 import { API_URL } from '../config/api.config';
 import {
+  ClientAnswer,
   ItemInput,
   ItemUpdate,
   Quote,
   QuoteCreate,
+  QuoteOverview,
   QuoteStatus,
   QuoteSummary,
   QuoteUpdate,
@@ -66,5 +68,19 @@ export class QuoteService {
 
   generateProposal(id: number): Observable<{ cotizacion_id: number; propuesta: string }> {
     return this.http.post<{ cotizacion_id: number; propuesta: string }>(`${this.url}/${id}/propuesta`, {});
+  }
+
+  // ---- Vista del cliente: solo sus cotizaciones enviadas, sin costos internos ----
+
+  overview(id: number): Observable<QuoteOverview> {
+    return this.http.get<QuoteOverview>(`${this.url}/${id}/resumen`);
+  }
+
+  proposal(id: number): Observable<{ cotizacion_id: number; propuesta: string }> {
+    return this.http.get<{ cotizacion_id: number; propuesta: string }>(`${this.url}/${id}/propuesta`);
+  }
+
+  respond(id: number, estado: ClientAnswer): Observable<QuoteOverview> {
+    return this.http.post<QuoteOverview>(`${this.url}/${id}/respuesta`, { estado });
   }
 }
