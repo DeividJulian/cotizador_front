@@ -5,7 +5,8 @@ who don't know how much to charge for a software project.
 Angular 21 · TypeScript · FastAPI + Neon (PostgreSQL) in the cloud · Vercel + Render.
 
 ## What it does
-- Sign in with **Google**: your quotes and rates are saved in your account, so you never lose your progress.
+- Sign up with your email (a 6-digit code, no password): your quotes and rates are saved in your account, so
+  you never lose your progress.
 - Describe your project in plain words; the AI turns it into modules with optimistic / most likely / pessimistic
   hours (PERT).
 - Calculates the price with **your hourly rates** (they start with market reference rates in COP; adjust them in
@@ -16,10 +17,9 @@ Angular 21 · TypeScript · FastAPI + Neon (PostgreSQL) in the cloud · Vercel +
 
 There are no roles: every user only sees their own quotes, rates and dashboard.
 
-## Login with Google
-The login screen shows Google's "Continue with Google" button (Google Identity Services). Google returns an ID token,
-the backend verifies it in `POST /auth/google` and answers with the app's session token, which is stored in the
-browser and sent on every API request. If the session expires, the app returns to the login screen. Logging out
+## Login with an emailed code
+On **Sign up** or **Log in** the user enters their email and receives a 6-digit code that expires in 10 minutes.
+After verifying it, the session token is stored in the browser and sent on every API request. If the session expires, the app returns to the login screen. Logging out
 also clears the API data cached by the Service Worker, so another account on the same browser never sees it.
 
 ## The three workers
@@ -39,16 +39,13 @@ npm test             # unit tests
 npm run build        # production build in dist/cotizador-front/browser
 ```
 
-Sign in with Google, then **New quote** → describe the project → **Create and analyze with AI**. To see how it
+Sign up (locally the backend prints the code in its terminal with `EMAIL_BACKEND=consola`), then **New quote** → describe the project → **Create and analyze with AI**. To see how it
 works with real data, use **Load examples** on the Dashboard.
 
 Scope descriptions must be written in Spanish: the backend's module detector uses Spanish keywords.
 
 ## Configuration
-In `src/app/core/config/api.config.ts`:
-- `PRODUCTION_API`: the backend URL on Render.
-- `GOOGLE_CLIENT_ID`: the OAuth client ID from Google Cloud (the same value as the backend's `GOOGLE_CLIENT_ID`).
-  Its **Authorized JavaScript origins** must include `http://localhost:4200` and the Vercel URL.
+The production backend URL is in `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
 
 ## Deployment
 Vercel (Angular preset, output `dist/cotizador-front/browser`). `vercel.json` rewrites routes to `index.html`
@@ -58,7 +55,7 @@ and prevents caching `sw.js` and `shared-worker.js`.
 ```
 src/app/
   core/       config, models, HTTP services, utilities and workers
-  core/auth/  Google sign-in loader, token interceptor and session guards
+  core/auth/  token interceptor and session guards
   shared/     notifications and connection status
   features/   auth, dashboard, quotes, quote-new, quote-detail, tariffs
 public/       sw.js and shared-worker.js
