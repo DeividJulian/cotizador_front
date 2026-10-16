@@ -1,26 +1,20 @@
 @if (auth.user(); as user) {
   <header class="topbar">
-    <a class="brand" [routerLink]="auth.homeUrl()">
+    <a class="brand" routerLink="/">
       <span class="logo">$</span>
       <span>AI Quoter</span>
     </a>
     <nav>
-      @if (auth.isAdmin()) {
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
-        <a routerLink="/cotizaciones" routerLinkActive="active">Quotes</a>
-        <a routerLink="/clientes" routerLinkActive="active">Clients</a>
-        <a routerLink="/tarifas" routerLinkActive="active">Rates</a>
-        <a routerLink="/usuarios" routerLinkActive="active">Users</a>
-      } @else {
-        <a routerLink="/mis-cotizaciones" routerLinkActive="active">My quotes</a>
-      }
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+      <a routerLink="/cotizaciones" routerLinkActive="active">My quotes</a>
+      <a routerLink="/tarifas" routerLinkActive="active">My rates</a>
     </nav>
     <span class="spacer"></span>
     <div class="account">
-      <span class="small">
-        <strong>{{ user.nombre }}</strong>
-        <span class="badge" [class]="user.rol === 'admin' ? 'ia' : 'manual'">{{ roleLabels[user.rol] }}</span>
-      </span>
+      @if (user.foto_url) {
+        <img class="avatar" [src]="user.foto_url" alt="" referrerpolicy="no-referrer" />
+      }
+      <span class="small"><strong>{{ user.nombre }}</strong></span>
       <button class="btn small" type="button" (click)="auth.logout()">Log out</button>
     </div>
   </header>
