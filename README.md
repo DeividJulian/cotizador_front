@@ -11,6 +11,19 @@ Angular 21 · TypeScript · FastAPI + Neon (PostgreSQL) in the cloud · Vercel +
 - Generates the commercial proposal in Markdown (read it, download it and print it).
 - Status flow: draft → sent → accepted / rejected.
 
+## Login and roles
+Passwordless: on **Sign up** or **Log in** the user enters their email and receives a 6-digit code that expires in
+10 minutes. After verifying it, the session token is stored in the browser and sent on every API request.
+
+| Role | Screens |
+|---|---|
+| Admin | Dashboard, Quotes (create, analyze, edit, send), Clients, Rates and Users (change roles). |
+| Client | My quotes: only the quotes sent to them, with the proposal and buttons to accept or reject. |
+
+The backend decides the role: emails in its `ADMIN_EMAILS` variable become admins, everyone else is a client.
+If the session expires, the app returns to the login screen. Logging out also clears the API data cached by the
+Service Worker, so another account on the same browser never sees it.
+
 ## The three workers
 | Worker | File | Purpose |
 | --- | --- | --- |
@@ -28,8 +41,9 @@ npm test             # unit tests
 npm run build        # production build in dist/cotizador-front/browser
 ```
 
-Order of use: first **Rates** (without them the analysis returns 409), then a **Client**, then **New quote** →
-**Analyze with AI**. For quick data use **Load demo data** on the Dashboard.
+Sign up with an email listed in the backend's `ADMIN_EMAILS`. Locally the backend prints the verification code in
+its terminal (`EMAIL_BACKEND=consola`). Then: first **Rates** (without them the analysis returns 409), then a
+**Client**, then **New quote** → **Analyze with AI**. For quick data use **Load demo data** on the Dashboard.
 
 Scope descriptions must be written in Spanish: the backend's module detector uses Spanish keywords.
 
@@ -45,6 +59,7 @@ and prevents caching `sw.js` and `shared-worker.js`.
 src/app/
   core/       config, models, HTTP services, utilities and workers
   shared/     notifications and connection status
-  features/   dashboard, quotes, quote-new, quote-detail, clients, tariffs
+  core/auth/  token interceptor and role guards
+  features/   auth, dashboard, quotes, quote-new, quote-detail, clients, tariffs, users, my-quotes
 public/       sw.js and shared-worker.js
 ```
