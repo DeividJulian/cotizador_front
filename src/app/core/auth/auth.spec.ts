@@ -4,10 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 
 import { API_URL } from '../config/api.config';
-import { Role, Session } from '../models';
+import { Session } from '../models';
 import { AuthService, tokenExpired } from '../services/auth.service';
 import { authInterceptor } from './auth.interceptor';
-import { adminGuard, clientGuard, guestGuard } from './guards';
+import { authGuard, guestGuard } from './guards';
 
 function base64url(value: object): string {
   return btoa(JSON.stringify(value)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -18,29 +18,33 @@ function fakeToken(secondsFromNow: number): string {
   return `${base64url({ alg: 'HS256' })}.${base64url({ sub: '1', exp: Math.floor(Date.now() / 1000) + secondsFromNow })}.firma`;
 }
 
-function storeSession(rol: Role, secondsFromNow = 3600): Session {
-  const session: Session = {
+function session(secondsFromNow = 3600): Session {
+  return {
     token: fakeToken(secondsFromNow),
     usuario: {
-      id: 1, nombre: 'Ana', email: 'ana@pyme.com', empresa: null, rol, verificado: true,
-      cliente_id: rol === 'cliente' ? 7 : null, creado_en: '2026-10-01T00:00:00Z', ultimo_acceso: null,
+      id: 1, nombre: 'Ana', email: 'ana@pyme.com', foto_url: null,
+      creado_en: '2026-10-01T00:00:00Z', ultimo_acceso: null,
     },
   };
-  localStorage.setItem('cotizador.session', JSON.stringify(session));
-  return session;
+}
+
+function storeSession(secondsFromNow = 3600): Session {
+  const value = session(secondsFromNow);
+  localStorage.setItem('cotizador.session', JSON.stringify(value));
+  return value;
 }
 
 function setup(): void {
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([{ path: 'login', children: [] }, { path: 'mis-cotizaciones', children: [] }]),
+      provideRouter([{ path: 'login', children: [] }]),
       provideHttpClient(withInterceptors([authInterceptor])),
       provideHttpClientTesting(),
     ],
   });
 }
 
-function runGuard(guard: typeof adminGuard): boolean | UrlTree {
+function runGuard(guard: typeof authGuard): boolean | UrlTree {
   return TestBed.runInInjectionContext(
     () => guard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot) as boolean | UrlTree,
   );
@@ -48,7 +52,7 @@ function runGuard(guard: typeof adminGuard): boolean | UrlTree {
 
 const path = (result: boolean | UrlTree) => (result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : result);
 
-describe('sesión e interceptor de autenticación', () => {
+describe('sesión con Google e interceptor', () => {
   beforeEach(() => localStorage.clear());
 
   it('reconoce tokens vencidos y vigentes', () => {
@@ -57,19 +61,46 @@ describe('sesión e interceptor de autenticación', () => {
     expect(tokenExpired('no-es-un-jwt')).toBe(true);
   });
 
-  it('restaura la sesión guardada y descarta la vencida', () => {
-    storeSession('admin');
+  it('canjea la credencial de Google por la sesión de la app y la guarda', () => {
     setup();
-    expect(TestBed.inject(AuthService).isAdmin()).toBe(true);
+    const auth = TestBed.inject(AuthService);
+    const expected = session();
+    auth.loginWithGoogle('credencial-de-google').subscribe();
+
+    const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/google`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ credencial: 'credencial-de-google' });
+    request.flush(expected);
+
+    expect(auth.isLoggedIn()).toBe(true);
+    expect(auth.user()?.email).toBe('ana@pyme.com');
+    expect(JSON.parse(localStorage.getItem('cotizador.session')!).token).toBe(expected.token);
+  });
+
+  it('si Google o el backend rechazan la credencial no queda sesión', () => {
+    setup();
+    const auth = TestBed.inject(AuthService);
+    auth.loginWithGoogle('credencial-invalida').subscribe({ error: () => undefined });
+    TestBed.inject(HttpTestingController)
+      .expectOne(`${API_URL}/auth/google`)
+      .flush({ detail: 'Google could not verify your account' }, { status: 401, statusText: 'Unauthorized' });
+    expect(auth.isLoggedIn()).toBe(false);
+    expect(localStorage.getItem('cotizador.session')).toBeNull();
+  });
+
+  it('restaura la sesión guardada (el progreso no se pierde al recargar) y descarta la vencida', () => {
+    storeSession();
+    setup();
+    expect(TestBed.inject(AuthService).isLoggedIn()).toBe(true);
 
     TestBed.resetTestingModule();
-    storeSession('admin', -10);
+    storeSession(-10);
     setup();
     expect(TestBed.inject(AuthService).isLoggedIn()).toBe(false);
   });
 
   it('envía el token solo a las peticiones del backend', () => {
-    const session = storeSession('cliente');
+    const saved = storeSession();
     setup();
     const http = TestBed.inject(HttpClient);
     const backend = TestBed.inject(HttpTestingController);
@@ -77,12 +108,12 @@ describe('sesión e interceptor de autenticación', () => {
     http.get(`${API_URL}/cotizaciones`).subscribe();
     http.get('https://otro-sitio.com/datos').subscribe();
 
-    expect(backend.expectOne(`${API_URL}/cotizaciones`).request.headers.get('Authorization')).toBe(`Bearer ${session.token}`);
+    expect(backend.expectOne(`${API_URL}/cotizaciones`).request.headers.get('Authorization')).toBe(`Bearer ${saved.token}`);
     expect(backend.expectOne('https://otro-sitio.com/datos').request.headers.has('Authorization')).toBe(false);
   });
 
   it('cierra la sesión cuando el backend responde 401', () => {
-    storeSession('cliente');
+    storeSession();
     setup();
     const auth = TestBed.inject(AuthService);
     TestBed.inject(HttpClient).get(`${API_URL}/cotizaciones`).subscribe({ error: () => undefined });
@@ -95,51 +126,29 @@ describe('sesión e interceptor de autenticación', () => {
     expect(localStorage.getItem('cotizador.session')).toBeNull();
   });
 
-  it('un código incorrecto (400 en /auth/verificar) no cierra nada ni guarda sesión', () => {
+  it('cerrar sesión borra la sesión guardada', () => {
+    storeSession();
     setup();
     const auth = TestBed.inject(AuthService);
-    auth.verify('ana@pyme.com', '000000').subscribe({ error: () => undefined });
-    TestBed.inject(HttpTestingController)
-      .expectOne(`${API_URL}/auth/verificar`)
-      .flush({ detail: 'Incorrect code' }, { status: 400, statusText: 'Bad Request' });
+    auth.logout();
     expect(auth.isLoggedIn()).toBe(false);
-  });
-
-  it('guarda la sesión al verificar el código', () => {
-    setup();
-    const auth = TestBed.inject(AuthService);
-    const session = storeSession('admin');
-    localStorage.clear();
-    auth.verify('ana@pyme.com', '123456').subscribe();
-    TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/verificar`).flush(session);
-    expect(auth.isAdmin()).toBe(true);
-    expect(JSON.parse(localStorage.getItem('cotizador.session')!).token).toBe(session.token);
+    expect(localStorage.getItem('cotizador.session')).toBeNull();
   });
 });
 
-describe('guards por rol', () => {
+describe('guards de sesión', () => {
   beforeEach(() => localStorage.clear());
 
-  it('sin sesión, las pantallas protegidas mandan al login', () => {
+  it('sin sesión, las pantallas de la app mandan al login', () => {
     setup();
-    expect(path(runGuard(adminGuard))).toBe('/login');
-    expect(path(runGuard(clientGuard))).toBe('/login');
+    expect(path(runGuard(authGuard))).toBe('/login');
     expect(runGuard(guestGuard)).toBe(true);
   });
 
-  it('un cliente no entra a las pantallas de admin', () => {
-    storeSession('cliente');
+  it('con sesión, el login manda al panel', () => {
+    storeSession();
     setup();
-    expect(path(runGuard(adminGuard))).toBe('/mis-cotizaciones');
-    expect(runGuard(clientGuard)).toBe(true);
-    expect(path(runGuard(guestGuard))).toBe('/mis-cotizaciones');
-  });
-
-  it('un admin entra a sus pantallas y no a las del cliente', () => {
-    storeSession('admin');
-    setup();
-    expect(runGuard(adminGuard)).toBe(true);
-    expect(path(runGuard(clientGuard))).toBe('/');
+    expect(runGuard(authGuard)).toBe(true);
     expect(path(runGuard(guestGuard))).toBe('/');
   });
 });
