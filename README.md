@@ -1,28 +1,26 @@
 # AI Quoter · Frontend
 
-Web interface for the **AI Quotation Engine** (Programación Orientada a la Web, UCC Pasto).
+Web interface for the **AI Quotation Engine** (Programación Orientada a la Web, UCC Pasto): a tool for freelancers
+who don't know how much to charge for a software project.
 Angular 21 · TypeScript · FastAPI + Neon (PostgreSQL) in the cloud · Vercel + Render.
 
 ## What it does
-- Registers clients and hourly rates per role (in COP).
-- Turns a project description into modules with optimistic / most likely / pessimistic hours (PERT).
-- Calculates the price: direct cost, contingency, margin, discount, VAT, schedule and payment milestones.
+- Sign in with **Google**: your quotes and rates are saved in your account, so you never lose your progress.
+- Describe your project in plain words; the AI turns it into modules with optimistic / most likely / pessimistic
+  hours (PERT).
+- Calculates the price with **your hourly rates** (they start with market reference rates in COP; adjust them in
+  **My rates**): direct cost, contingency, margin, discount, VAT, schedule and payment milestones.
 - Simulates the risk with Monte Carlo (P50 / P80 / P90 and probability of exceeding the hours).
-- Generates the commercial proposal in Markdown (read it, download it and print it).
-- Status flow: draft → sent → accepted / rejected.
+- Generates the commercial proposal in Markdown for your client (read it, download it and print it).
+- Tracks each proposal: draft → sent → accepted / rejected.
 
-## Login and roles
-Passwordless: on **Sign up** or **Log in** the user enters their email and receives a 6-digit code that expires in
-10 minutes. After verifying it, the session token is stored in the browser and sent on every API request.
+There are no roles: every user only sees their own quotes, rates and dashboard.
 
-| Role | Screens |
-|---|---|
-| Admin | Dashboard, Quotes (create, analyze, edit, send), Clients, Rates and Users (change roles). |
-| Client | My quotes: only the quotes sent to them, with the proposal and buttons to accept or reject. |
-
-The backend decides the role: emails in its `ADMIN_EMAILS` variable become admins, everyone else is a client.
-If the session expires, the app returns to the login screen. Logging out also clears the API data cached by the
-Service Worker, so another account on the same browser never sees it.
+## Login with Google
+The login screen shows Google's "Continue with Google" button (Google Identity Services). Google returns an ID token,
+the backend verifies it in `POST /auth/google` and answers with the app's session token, which is stored in the
+browser and sent on every API request. If the session expires, the app returns to the login screen. Logging out
+also clears the API data cached by the Service Worker, so another account on the same browser never sees it.
 
 ## The three workers
 | Worker | File | Purpose |
@@ -41,14 +39,16 @@ npm test             # unit tests
 npm run build        # production build in dist/cotizador-front/browser
 ```
 
-Sign up with an email listed in the backend's `ADMIN_EMAILS`. Locally the backend prints the verification code in
-its terminal (`EMAIL_BACKEND=consola`). Then: first **Rates** (without them the analysis returns 409), then a
-**Client**, then **New quote** → **Analyze with AI**. For quick data use **Load demo data** on the Dashboard.
+Sign in with Google, then **New quote** → describe the project → **Create and analyze with AI**. To see how it
+works with real data, use **Load examples** on the Dashboard.
 
 Scope descriptions must be written in Spanish: the backend's module detector uses Spanish keywords.
 
 ## Configuration
-The production backend URL is in `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
+In `src/app/core/config/api.config.ts`:
+- `PRODUCTION_API`: the backend URL on Render.
+- `GOOGLE_CLIENT_ID`: the OAuth client ID from Google Cloud (the same value as the backend's `GOOGLE_CLIENT_ID`).
+  Its **Authorized JavaScript origins** must include `http://localhost:4200` and the Vercel URL.
 
 ## Deployment
 Vercel (Angular preset, output `dist/cotizador-front/browser`). `vercel.json` rewrites routes to `index.html`
@@ -58,8 +58,8 @@ and prevents caching `sw.js` and `shared-worker.js`.
 ```
 src/app/
   core/       config, models, HTTP services, utilities and workers
+  core/auth/  Google sign-in loader, token interceptor and session guards
   shared/     notifications and connection status
-  core/auth/  token interceptor and role guards
-  features/   auth, dashboard, quotes, quote-new, quote-detail, clients, tariffs, users, my-quotes
+  features/   auth, dashboard, quotes, quote-new, quote-detail, tariffs
 public/       sw.js and shared-worker.js
 ```
