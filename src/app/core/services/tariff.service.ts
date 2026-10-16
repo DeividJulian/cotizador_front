@@ -25,4 +25,13 @@ export class TariffService {
   remove(id: number): Observable<unknown> {
     return this.http.delete(`${this.url}/${id}`);
   }
+
+  /** Reemplaza todas tus tarifas por las de referencia del mercado. */
+  restoreMarket(): Observable<Tariff[]> {
+    return this.http.post<Tariff[]>(`${this.url}/restablecer`, {});
+  }
+
+  market(): Observable<TariffInput[]> {
+    return this.http.get<TariffInput[]>(`${this.url}/mercado`);
+  }
 }

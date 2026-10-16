@@ -26,6 +26,7 @@ export class Tariffs {
   protected readonly error = signal<string | null>(null);
   protected readonly editingId = signal<number | null>(null);
   protected readonly saving = signal(false);
+  protected readonly restoring = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
     rol: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60)]],
@@ -80,6 +81,23 @@ export class Tariffs {
       },
       error: (err) => {
         this.saving.set(false);
+        this.toast.error(errorMessage(err));
+      },
+    });
+  }
+
+  protected restoreMarket(): void {
+    if (this.tariffs().length && !confirm('Replace all your rates with the market reference rates?')) return;
+    this.restoring.set(true);
+    this.service.restoreMarket().subscribe({
+      next: (list) => {
+        this.restoring.set(false);
+        this.tariffs.set(list);
+        this.cancel();
+        this.toast.ok('Market rates restored');
+      },
+      error: (err) => {
+        this.restoring.set(false);
         this.toast.error(errorMessage(err));
       },
     });

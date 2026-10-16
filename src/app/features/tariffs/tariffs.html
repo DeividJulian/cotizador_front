@@ -1,14 +1,17 @@
 <section class="page">
   <div class="page-head">
     <div>
-      <p class="eyebrow">Basis of the financial calculation</p>
-      <h1>Rates by role</h1>
+      <p class="eyebrow">Basis of the price</p>
+      <h1>My rates</h1>
     </div>
+    <button class="btn" type="button" (click)="restoreMarket()" [disabled]="restoring()">
+      {{ restoring() ? 'Restoring…' : 'Restore market rates' }}
+    </button>
   </div>
 
   <p class="subtle">
-    The cost of each quote comes from each role's hours times its hourly rate. If a role has no rate,
-    the system cannot calculate the price.
+    The price of each quote comes from each role's hours times your hourly rate. They start with market reference
+    rates in Colombia (COP); adjust them to what you charge. If a role has no rate, the price cannot be calculated.
   </p>
 
   <form class="card form" [formGroup]="form" (ngSubmit)="save()">
@@ -45,7 +48,7 @@
   } @else if (loading()) {
     <div class="card"><div class="skeleton"></div></div>
   } @else if (tariffs().length === 0) {
-    <div class="empty">There are no rates. Create at least: Backend, Frontend, UX/UI Design, QA, DevOps and Project Management.</div>
+    <div class="empty">You have no rates. Click <strong>Restore market rates</strong> to load the reference ones.</div>
   } @else {
     <div class="card table-wrap">
       <table>
