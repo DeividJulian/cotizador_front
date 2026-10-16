@@ -34,8 +34,10 @@ export function levelLabel(level: string | null | undefined): string {
 
 export interface QuoteSummary {
   id: number;
-  cliente_id: number;
   titulo: string;
+  /** Opcional: para quién es el proyecto */
+  cliente_nombre: string | null;
+  cliente_empresa: string | null;
   estado: QuoteStatus;
   total: number;
   creada_en: string;
@@ -138,12 +140,15 @@ export interface QuoteParams {
 }
 
 export interface QuoteCreate extends QuoteParams {
-  cliente_id: number;
+  cliente_nombre?: string | null;
+  cliente_empresa?: string | null;
   titulo: string;
   descripcion_alcance: string;
 }
 
 export interface QuoteUpdate extends Partial<QuoteParams> {
+  cliente_nombre?: string;
+  cliente_empresa?: string;
   titulo?: string;
   descripcion_alcance?: string;
 }
@@ -170,23 +175,6 @@ export interface SimilarQuote {
   total: number;
   similitud: number;
 }
-
-/** Vista compacta (GET /cotizaciones/{id}/resumen): lo único que ve un cliente, sin costos internos. */
-export interface QuoteOverview {
-  id: number;
-  titulo: string;
-  cliente: string;
-  estado: QuoteStatus;
-  modulos: number;
-  horas_esperadas: number;
-  rango_horas: [number, number];
-  confianza: string | null;
-  duracion_semanas: number;
-  total: number;
-  tiene_propuesta: boolean;
-}
-
-export type ClientAnswer = 'aceptada' | 'rechazada';
 
 export interface ScopeEstimate {
   analisis: Analysis;
