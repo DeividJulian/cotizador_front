@@ -1,13 +1,13 @@
 import { Injectable, isDevMode, signal } from '@angular/core';
 
 /**
- * SERVICE WORKER: registra public/sw.js y expone el estado de la conexión.
- * En desarrollo (ng serve) no se registra para evitar confusiones con la caché.
+ * SERVICE WORKER: registers public/sw.js and exposes the connection status.
+ * In development (ng serve) it is not registered, to avoid cache confusion.
  */
 @Injectable({ providedIn: 'root' })
 export class ConnectionService {
   readonly online = signal(typeof navigator === 'undefined' ? true : navigator.onLine);
-  /** true cuando la última respuesta del backend salió de la copia guardada por el Service Worker. */
+  /** true when the last backend response came from the copy saved by the Service Worker. */
   readonly dataFromCache = signal(false);
   readonly serviceWorkerActive = signal(false);
 

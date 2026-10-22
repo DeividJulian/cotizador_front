@@ -5,40 +5,48 @@ import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import {
+  CROSS_CUTTING,
   NEXT_STATUSES,
   Quote,
   QuoteStatus,
+  STATUSES,
+  STATUS_LABELS,
   SimilarQuote,
   levelLabel,
   quoteCode,
-  statusLabel,
 } from '../../core/models';
 import { QuoteService } from '../../core/services/quote.service';
 import { ToastService } from '../../core/services/toast.service';
-import { cop, num } from '../../core/utils/format';
+import { cop, num, shortDate } from '../../core/utils/format';
 import { errorMessage } from '../../core/utils/http-error';
 import { TabSyncService } from '../../core/workers/tab-sync.service';
+import { Icon } from '../../shared/icon/icon';
 import { QuoteFinance } from './quote-finance';
 import { QuoteItems } from './quote-items';
 import { QuoteProposal } from './quote-proposal';
 import { SimulationPanel } from './simulation-panel';
 
-type Tab = 'modulos' | 'finanzas' | 'riesgo' | 'propuesta';
+type Tab = 'modules' | 'finance' | 'risk' | 'proposal';
 
-const STATUS_ACTIONS: Record<QuoteStatus, string> = {
-  enviada: 'Mark as sent',
-  borrador: 'Back to draft',
-  aceptada: 'Accepted',
-  rechazada: 'Rejected',
+const FINAL_CONFIRM: Partial<Record<QuoteStatus, string>> = {
+  accepted: '¿Marcar la cotización como aceptada? Es un estado final.',
+  rejected: '¿Marcar la cotización como rechazada? Es un estado final.',
+};
+
+const STATUS_DONE: Record<QuoteStatus, string> = {
+  draft: 'La cotización volvió a borrador',
+  sent: 'Marcada como enviada',
+  accepted: 'Marcada como aceptada',
+  rejected: 'Marcada como rechazada',
 };
 
 @Component({
   selector: 'app-quote-detail',
-  imports: [ReactiveFormsModule, RouterLink, QuoteItems, QuoteFinance, QuoteProposal, SimulationPanel],
+  imports: [ReactiveFormsModule, RouterLink, Icon, QuoteItems, QuoteFinance, QuoteProposal, SimulationPanel],
   templateUrl: './quote-detail.html',
 })
 export class QuoteDetail {
-  /** Parámetro :id de la ruta (withComponentInputBinding) */
+  /** :id route parameter (withComponentInputBinding) */
   readonly id = input.required<string>();
 
   private readonly quotes = inject(QuoteService);
@@ -49,31 +57,33 @@ export class QuoteDetail {
 
   protected readonly cop = cop;
   protected readonly num = num;
+  protected readonly shortDate = shortDate;
   protected readonly code = quoteCode;
-  protected readonly statusLabel = statusLabel;
   protected readonly level = levelLabel;
-  protected readonly next = NEXT_STATUSES;
-  protected readonly actions = STATUS_ACTIONS;
+  protected readonly statuses = STATUSES;
+  protected readonly statusLabels = STATUS_LABELS;
 
   protected readonly quote = signal<Quote | null>(null);
   protected readonly similar = signal<SimilarQuote[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
-  protected readonly tab = signal<Tab>('modulos');
+  protected readonly analyzing = signal(false);
+  protected readonly tab = signal<Tab>('modules');
   protected readonly editing = signal(false);
 
-  protected readonly isDraft = computed(() => this.quote()?.estado === 'borrador');
+  protected readonly isDraft = computed(() => this.quote()?.status === 'draft');
+  protected readonly moduleCount = computed(() => (this.quote()?.items ?? []).filter((i) => i.category !== CROSS_CUTTING).length);
 
   protected readonly form = this.fb.nonNullable.group({
-    titulo: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
-    cliente_nombre: ['', [Validators.maxLength(100)]],
-    cliente_empresa: ['', [Validators.maxLength(100)]],
-    descripcion_alcance: ['', [Validators.required, Validators.minLength(10)]],
-    margen_pct: [30, [Validators.required, Validators.min(0), Validators.max(200)]],
-    contingencia_pct: [10, [Validators.required, Validators.min(0), Validators.max(100)]],
-    descuento_pct: [0, [Validators.required, Validators.min(0), Validators.max(50)]],
-    iva_pct: [19, [Validators.required, Validators.min(0), Validators.max(30)]],
+    title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
+    client_name: ['', [Validators.maxLength(100)]],
+    client_company: ['', [Validators.maxLength(100)]],
+    scope_description: ['', [Validators.required, Validators.minLength(10)]],
+    margin_pct: [30, [Validators.required, Validators.min(0), Validators.max(200)]],
+    contingency_pct: [10, [Validators.required, Validators.min(0), Validators.max(100)]],
+    discount_pct: [0, [Validators.required, Validators.min(0), Validators.max(50)]],
+    vat_pct: [19, [Validators.required, Validators.min(0), Validators.max(30)]],
   });
 
   constructor() {
@@ -82,6 +92,11 @@ export class QuoteDetail {
       this.sync.remoteChanges();
       untracked(() => this.load(quoteId));
     });
+  }
+
+  protected canMoveTo(status: QuoteStatus): boolean {
+    const quote = this.quote();
+    return !!quote && NEXT_STATUSES[quote.status].includes(status);
   }
 
   protected load(quoteId = Number(this.id())): void {
@@ -102,45 +117,40 @@ export class QuoteDetail {
     });
   }
 
-  protected forWhom(quote: Quote): string {
-    const who = [quote.cliente_nombre, quote.cliente_empresa].filter(Boolean).join(' · ');
-    return who ? `For ${who}` : 'Your project';
-  }
-
-  /** Actualiza la pantalla con la cotización que devolvió el servidor. */
+  /** Updates the screen with the quote returned by the server. */
   protected apply(quote: Quote): void {
     this.quote.set(quote);
     this.form.reset({
-      titulo: quote.titulo,
-      cliente_nombre: quote.cliente_nombre ?? '',
-      cliente_empresa: quote.cliente_empresa ?? '',
-      descripcion_alcance: quote.descripcion_alcance,
-      margen_pct: quote.margen_pct,
-      contingencia_pct: quote.contingencia_pct,
-      descuento_pct: quote.descuento_pct,
-      iva_pct: quote.iva_pct,
+      title: quote.title,
+      client_name: quote.client_name ?? '',
+      client_company: quote.client_company ?? '',
+      scope_description: quote.scope_description,
+      margin_pct: quote.margin_pct,
+      contingency_pct: quote.contingency_pct,
+      discount_pct: quote.discount_pct,
+      vat_pct: quote.vat_pct,
     });
   }
 
   protected analyze(): void {
     const quote = this.quote();
     if (!quote) return;
-    if (quote.items.length && !confirm('The scope will be analyzed again. Manually adjusted modules are kept. Continue?')) return;
-    this.busy.set(true);
+    if (quote.items.length && !confirm('Se analizará el alcance otra vez. Los módulos que ajustaste a mano se conservan. ¿Continuar?')) return;
+    this.analyzing.set(true);
     this.quotes.analyze(quote.id).subscribe({
       next: (updated) => {
-        this.busy.set(false);
+        this.analyzing.set(false);
         this.apply(updated);
-        this.toast.ok('Analysis complete: modules, hours and price updated');
+        this.toast.ai('Análisis completo', 'Módulos, horas y precio actualizados.');
       },
       error: (err) => {
-        this.busy.set(false);
-        this.toast.error(errorMessage(err));
+        this.analyzing.set(false);
+        this.toast.error('No se pudo analizar', errorMessage(err));
       },
     });
   }
 
-  protected saveParams(): void {
+  protected saveDetails(): void {
     const quote = this.quote();
     if (!quote) return;
     if (this.form.invalid) {
@@ -153,43 +163,43 @@ export class QuoteDetail {
         this.busy.set(false);
         this.editing.set(false);
         this.apply(updated);
-        this.toast.ok('Quote updated and price recalculated');
+        this.toast.ok('Cotización actualizada', 'El precio se recalculó.');
       },
       error: (err) => {
         this.busy.set(false);
-        this.toast.error(errorMessage(err));
+        this.toast.error('No se pudieron guardar los cambios', errorMessage(err));
       },
     });
   }
 
   protected changeStatus(status: QuoteStatus): void {
     const quote = this.quote();
-    if (!quote) return;
-    if (status === 'rechazada' && !confirm('Mark the quote as rejected? It is a final state.')) return;
-    if (status === 'aceptada' && !confirm('Mark the quote as accepted? It is a final state.')) return;
+    if (!quote || status === quote.status || !this.canMoveTo(status)) return;
+    const question = FINAL_CONFIRM[status];
+    if (question && !confirm(question)) return;
     this.busy.set(true);
     this.quotes.setStatus(quote.id, status).subscribe({
       next: (updated) => {
         this.busy.set(false);
         this.apply(updated);
-        this.toast.ok(`Quote ${statusLabel(status).toLowerCase()}`);
+        this.toast.ok(STATUS_DONE[status], `${quoteCode(updated.id)} · ${cop(updated.total)}`);
       },
       error: (err) => {
         this.busy.set(false);
-        this.toast.error(errorMessage(err));
+        this.toast.error('No se pudo cambiar el estado', errorMessage(err));
       },
     });
   }
 
   protected remove(): void {
     const quote = this.quote();
-    if (!quote || !confirm(`Delete quote ${quoteCode(quote.id)}?`)) return;
+    if (!quote || !confirm(`¿Eliminar la cotización ${quoteCode(quote.id)}? No se puede deshacer.`)) return;
     this.quotes.remove(quote.id).subscribe({
       next: () => {
-        this.toast.ok('Quote deleted');
+        this.toast.ok('Cotización eliminada');
         void this.router.navigate(['/cotizaciones']);
       },
-      error: (err) => this.toast.error(errorMessage(err)),
+      error: (err) => this.toast.error('No se pudo eliminar', errorMessage(err)),
     });
   }
 }

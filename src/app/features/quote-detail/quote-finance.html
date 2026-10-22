@@ -1,84 +1,127 @@
-@if (quote().financiero.total) {
-  <div class="grid cols-2">
-    <div class="card">
-      <h2>Price breakdown</h2>
-      <div class="stack-bar">
-        @for (s of slices(); track s.label) {
-          <span [style.width.%]="s.width" [style.background]="s.color" [title]="s.label"></span>
-        }
-      </div>
-      <div class="legend" style="margin: 10px 0 14px">
-        @for (s of slices(); track s.label) {
-          <span><i [style.background]="s.color"></i>{{ s.label }}</span>
-        }
-      </div>
-      <div class="table-wrap">
-        <table>
-          <tbody>
-            <tr><td>Direct cost (hours × rate)</td><td class="num money">{{ cop(quote().financiero.costo_directo) }}</td></tr>
-            <tr><td>Contingency ({{ quote().contingencia_pct }}%)</td><td class="num money">{{ cop(quote().financiero.contingencia) }}</td></tr>
-            <tr><td>Margin ({{ quote().margen_pct }}%)</td><td class="num money">{{ cop(quote().financiero.margen) }}</td></tr>
-            @if (quote().financiero.descuento) {
-              <tr><td>Discount ({{ quote().descuento_pct }}%)</td><td class="num money">-{{ cop(quote().financiero.descuento) }}</td></tr>
-            }
-            <tr><td>Subtotal</td><td class="num money">{{ cop(quote().financiero.base_gravable) }}</td></tr>
-            <tr><td>VAT ({{ quote().iva_pct }}%)</td><td class="num money">{{ cop(quote().financiero.iva) }}</td></tr>
-            <tr><td><strong>Total</strong></td><td class="num money" style="color: var(--accent)">{{ cop(quote().financiero.total) }}</td></tr>
-          </tbody>
-        </table>
-      </div>
+@if (!hasPrice()) {
+  <section class="card">
+    <div class="state state--empty">
+      <h2 class="state__title">Todavía no hay precio</h2>
+      <p class="state__text">Analiza la cotización o agrega módulos para calcular el costo, el margen y los pagos.</p>
     </div>
+  </section>
+} @else {
+  <div class="grid grid--2">
+    <section class="card" aria-labelledby="bd-title">
+      <div class="card__header"><div><h2 class="card__title" id="bd-title">De dónde sale el precio</h2><p class="card__subtitle">Cada parte del total, en pesos colombianos.</p></div></div>
+      <div class="card__body stack">
+        <div class="stacked-bar" role="img" [attr.aria-label]="barLabel()">
+          @for (s of slices(); track s.label) {
+            <span class="stacked-bar__seg" [style.width.%]="s.pct" [style.background]="'var(--chart-' + s.color + ')'"></span>
+          }
+        </div>
+        <div class="legend">
+          @for (s of slices(); track s.label) {
+            <span class="legend__item"><span class="swatch" [class]="'swatch--' + s.color"></span>{{ s.label }} {{ s.pct.toFixed(0) }} %</span>
+          }
+        </div>
+        <div class="breakdown">
+          <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--1"></span>Costo directo <span class="subtle xsmall">{{ num(totalHours()) }} h × tus tarifas</span></span><span class="breakdown__value">{{ cop(f().direct_cost) }}</span></div>
+          <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--4"></span>+ Contingencia {{ quote().contingency_pct }} %</span><span class="breakdown__value">{{ cop(f().contingency) }}</span></div>
+          <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--3"></span>+ Margen {{ quote().margin_pct }} %</span><span class="breakdown__value">{{ cop(f().margin) }}</span></div>
+          @if (f().discount) {
+            <div class="breakdown__row breakdown__row--sub"><span class="breakdown__label"><span class="swatch"></span>− Descuento {{ quote().discount_pct }} %</span><span class="breakdown__value">−{{ cop(f().discount) }}</span></div>
+          }
+          <div class="breakdown__row breakdown__row--sub"><span class="breakdown__label"><span class="swatch" style="background: transparent"></span>Subtotal antes de IVA</span><span class="breakdown__value">{{ cop(f().taxable_base) }}</span></div>
+          <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--2"></span>+ IVA {{ quote().vat_pct }} %</span><span class="breakdown__value">{{ cop(f().vat) }}</span></div>
+          <div class="breakdown__row breakdown__row--total"><span class="breakdown__label">Total</span><span class="breakdown__value">{{ cop(f().total) }}</span></div>
+        </div>
+      </div>
+    </section>
 
-    <div class="card">
-      <h2>Cost by role</h2>
+    <section class="card" aria-labelledby="role-title">
+      <div class="card__header">
+        <div><h2 class="card__title" id="role-title">Costo por rol</h2><p class="card__subtitle">Horas esperadas × valor hora de Mis tarifas.</p></div>
+        <a class="btn btn--ghost btn--sm" routerLink="/tarifas">Editar tarifas</a>
+      </div>
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>Role</th><th class="num">Hours</th><th class="num">Hourly rate</th><th class="num">Cost</th></tr></thead>
+        <table class="table table--stack">
+          <thead><tr><th scope="col">Rol</th><th scope="col" class="num">Horas</th><th scope="col" class="num">Valor / h</th><th scope="col" class="num">Costo</th><th scope="col">Peso</th></tr></thead>
           <tbody>
-            @for (r of quote().financiero.detalle_por_rol ?? []; track r.rol) {
+            @for (r of roles(); track r.role) {
               <tr>
-                <td>{{ r.rol }}</td>
-                <td class="num">{{ num(r.horas) }}</td>
-                <td class="num">{{ cop(r.valor_hora) }}</td>
-                <td class="num money">{{ cop(r.costo) }}</td>
+                <td class="cell-head"><span class="row"><span class="swatch" [class]="'swatch--' + roleColor(r.role)"></span><span class="strong">{{ r.role }}</span></span></td>
+                <td class="num" data-label="Horas">{{ num(r.hours) }}</td>
+                <td class="num" data-label="Valor / h">{{ cop(r.hourly_rate) }}</td>
+                <td class="num strong" data-label="Costo">{{ cop(r.cost) }}</td>
+                <td data-label="Peso">
+                  <span class="meter"><span class="meter__track"><span class="meter__fill" style="display: block" [style.width.%]="r.share" [style.background]="'var(--chart-' + roleColor(r.role) + ')'"></span></span><span class="meter__value">{{ r.share.toFixed(0) }} %</span></span>
+                </td>
               </tr>
             }
           </tbody>
+          <tfoot><tr><td>Costo directo</td><td class="num">{{ num(totalHours()) }} h</td><td></td><td class="num">{{ cop(f().direct_cost) }}</td><td></td></tr></tfoot>
         </table>
       </div>
-    </div>
+    </section>
   </div>
 
-  <div class="grid cols-2">
-    <div class="card">
-      <h2>Hour range by role</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Role</th><th class="num">Optimistic</th><th class="num">Expected</th><th class="num">Pessimistic</th></tr></thead>
-          <tbody>
-            @for (r of roles(); track r.role) {
-              <tr><td>{{ r.role }}</td><td class="num">{{ num(r.optimista) }}</td><td class="num"><strong>{{ num(r.esperadas) }}</strong></td><td class="num">{{ num(r.pesimista) }}</td></tr>
-            }
-          </tbody>
-        </table>
+  @if (ranges().rows.length) {
+    <section class="card" aria-labelledby="range-title">
+      <div class="card__header">
+        <div><h2 class="card__title" id="range-title">Rango de horas por rol</h2><p class="card__subtitle">Barra = de optimista a pesimista. Línea = esperadas.</p></div>
+        <div class="legend">
+          <span class="legend__item"><span class="swatch" style="background: color-mix(in srgb, var(--accent) 45%, transparent)"></span>Rango</span>
+          <span class="legend__item"><span class="swatch" style="width: 3px; background: var(--text)"></span>Esperadas</span>
+        </div>
       </div>
-    </div>
+      <div class="card__body">
+        <div class="range-list">
+          @for (r of ranges().rows; track r.role) {
+            <div class="range-row">
+              <span class="strong">{{ r.role }}</span>
+              <div class="range" role="img" [attr.aria-label]="r.role + ': de ' + num(r.optimistic) + ' a ' + num(r.pessimistic) + ' horas, esperadas ' + num(r.expected)">
+                <span class="range__span" [style.left.%]="r.left" [style.width.%]="r.width"></span>
+                <span class="range__mark" [style.left.%]="r.mark"></span>
+              </div>
+              <span class="range-row__values"><strong>{{ num(r.expected) }} h</strong> · {{ num(r.optimistic) }}–{{ num(r.pessimistic) }}</span>
+            </div>
+          }
+          <div class="range-row">
+            <span></span>
+            <div class="timeline-scale" style="margin: 0">
+              @for (mark of scale(); track $index) { <span>{{ mark }}{{ $last ? ' h' : '' }}</span> }
+            </div>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  }
 
-    <div class="card">
-      <h2>Schedule and payment milestones</h2>
-      <p class="small subtle" style="margin-bottom: 8px">Estimated duration: <strong>{{ quote().financiero.duracion_semanas }} weeks</strong></p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Milestone</th><th class="num">Week</th><th class="num">%</th><th class="num">Amount</th></tr></thead>
-          <tbody>
-            @for (h of quote().financiero.hitos_pago ?? []; track h.nombre) {
-              <tr><td>{{ h.nombre }}</td><td class="num">{{ h.semana }}</td><td class="num">{{ h.porcentaje }}</td><td class="num money">{{ cop(h.monto) }}</td></tr>
-            }
-          </tbody>
-        </table>
+  <section class="card" aria-labelledby="tl-title">
+    <div class="card__header">
+      <div>
+        <h2 class="card__title" id="tl-title">Cronograma y pagos</h2>
+        <p class="card__subtitle">≈ {{ f().duration_weeks }} {{ f().duration_weeks === 1 ? 'semana' : 'semanas' }} (30 h productivas por semana). Pagos en 40 / 30 / 30.</p>
       </div>
     </div>
-  </div>
-} @else {
-  <div class="empty">There is no financial calculation yet. Click <strong>Analyze with AI</strong> to generate it.</div>
+    <div class="card__body stack stack--lg">
+      <div>
+        <div class="timeline-track" aria-hidden="true">
+          @for (p of phases(); track p.name) {
+            <span class="timeline-track__phase" [class.timeline-track__phase--active]="$first">{{ p.name }} · {{ p.label }}</span>
+          }
+        </div>
+        <div class="timeline-scale">
+          @for (w of weekScale(); track w) { <span>{{ w }}</span> }
+        </div>
+      </div>
+      <div class="milestones">
+        @for (m of f().payment_milestones ?? []; track m.name) {
+          <div class="milestone">
+            <span class="milestone__pct">{{ m.percentage }} %</span>
+            <span class="milestone__title">{{ m.name }}</span>
+            <span class="milestone__when">{{ milestoneWhen(m.week) }}</span>
+            <span class="milestone__amount">{{ cop(m.amount) }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
 }

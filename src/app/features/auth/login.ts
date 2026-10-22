@@ -5,11 +5,13 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { errorMessage } from '../../core/utils/http-error';
+import { Icon } from '../../shared/icon/icon';
+import { AuthPitch } from './auth-pitch';
 import { CodeStep } from './code-step';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, CodeStep],
+  imports: [ReactiveFormsModule, RouterLink, CodeStep, AuthPitch, Icon],
   templateUrl: './login.html',
 })
 export class Login {
@@ -39,7 +41,7 @@ export class Login {
       },
       error: (err) => {
         this.sending.set(false);
-        this.toast.error(errorMessage(err));
+        this.toast.error('No pudimos enviarte el código', errorMessage(err));
       },
     });
   }

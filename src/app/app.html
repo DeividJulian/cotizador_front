@@ -1,25 +1,37 @@
 @if (auth.user(); as user) {
-  <header class="topbar">
-    <a class="brand" routerLink="/">
-      <span class="logo">$</span>
-      <span>AI Quoter</span>
-    </a>
-    <nav>
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
-      <a routerLink="/cotizaciones" routerLinkActive="active">My quotes</a>
-      <a routerLink="/tarifas" routerLinkActive="active">My rates</a>
-    </nav>
-    <span class="spacer"></span>
-    <div class="account">
-      <span class="small"><strong>{{ user.nombre }}</strong></span>
-      <button class="btn small" type="button" (click)="auth.logout()">Log out</button>
-    </div>
-  </header>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" routerLink="/">
+        <span class="brand__mark"><app-icon name="brand" /></span>
+        <span>Cotizador <span class="brand__ai">IA</span></span>
+      </a>
+      <nav class="nav" aria-label="Principal">
+        <a class="nav__link" routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
+          <app-icon name="dashboard" />Panel
+        </a>
+        <a class="nav__link" routerLink="/cotizaciones" routerLinkActive="is-active" ariaCurrentWhenActive="page">
+          <app-icon name="quotes" />Mis cotizaciones
+        </a>
+        <a class="nav__link" routerLink="/tarifas" routerLinkActive="is-active" ariaCurrentWhenActive="page">
+          <app-icon name="money" />Mis tarifas
+        </a>
+      </nav>
+      <div class="topbar__right">
+        <div class="user">
+          <span class="avatar" aria-hidden="true">{{ initials(user.name) }}</span>
+          <span class="user__name">{{ user.name }}</span>
+        </div>
+        <button class="btn btn--ghost btn--sm" type="button" (click)="auth.logout()">
+          <app-icon name="logout" /><span class="hide-mobile">Cerrar sesión</span>
+        </button>
+      </div>
+    </header>
+
+    <router-outlet />
+    <app-connection-status />
+  </div>
+} @else {
+  <router-outlet />
 }
 
-<main>
-  <router-outlet />
-</main>
-
-<app-connection-status />
 <app-toasts />

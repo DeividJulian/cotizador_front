@@ -1,0 +1,105 @@
+<main class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Mis tarifas</h1>
+      <p class="page-subtitle">Lo que cobras por hora en cada rol. El precio de cada cotización parte de aquí: horas × tarifa.</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn--secondary" type="button" (click)="resetToMarket()" [disabled]="resetting()">
+        @if (resetting()) { <span class="spinner"></span> } @else { <app-icon name="reset" /> }
+        Restaurar tarifas del mercado
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid--aside-main">
+    <section class="card" aria-labelledby="add-title">
+      <div class="card__header"><h2 class="card__title" id="add-title">Agregar una tarifa</h2></div>
+      <form class="card__body stack" [formGroup]="addForm" (ngSubmit)="add()">
+        <div class="field" [class.field--error]="addForm.controls.role.touched && addForm.controls.role.invalid">
+          <label class="label" for="r-role">Rol</label>
+          <input class="input" id="r-role" formControlName="role" placeholder="Ej.: Móvil" />
+          @if (addForm.controls.role.touched && addForm.controls.role.invalid) { <span class="error-text">Escribe el nombre del rol.</span> }
+        </div>
+        <div class="field" [class.field--error]="addForm.controls.hourly_rate.touched && addForm.controls.hourly_rate.invalid">
+          <label class="label" for="r-rate">Valor hora (COP)</label>
+          <div class="input-affix input-affix--prefix input-affix--suffix">
+            <span class="input-affix__prefix">$</span>
+            <input class="input tabular" id="r-rate" type="number" min="1" step="1000" inputmode="numeric" formControlName="hourly_rate" placeholder="80000" />
+            <span class="input-affix__suffix">/ hora</span>
+          </div>
+          @if (addForm.controls.hourly_rate.touched && addForm.controls.hourly_rate.invalid) { <span class="error-text">Escribe un valor entre $1 y $2.000.000.</span> }
+        </div>
+        <button class="btn btn--primary btn--block" [class.is-loading]="saving() && editingId() === null" type="submit" [disabled]="saving()"><app-icon name="plus" />Agregar tarifa</button>
+        <p class="hint">Si un módulo usa un rol sin tarifa, la cotización te avisará para que lo agregues.</p>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="list-title">
+      <div class="card__header"><div><h2 class="card__title" id="list-title">Tus valores por hora</h2><p class="card__subtitle">{{ countLabel() }}</p></div></div>
+
+      @if (error(); as message) {
+        <div class="state state--error" role="alert">
+          <span class="state__icon"><app-icon name="warning" /></span>
+          <h3 class="state__title">No pudimos cargar tus tarifas</h3>
+          <p class="state__text">{{ message }}</p>
+          <div class="state__actions"><button class="btn btn--primary" type="button" (click)="load()"><app-icon name="refresh" />Reintentar</button></div>
+        </div>
+      } @else if (loading()) {
+        <div class="card__body stack">
+          @for (i of [1, 2, 3, 4]; track i) { <span class="skeleton skeleton--row"></span> }
+        </div>
+      } @else if (rates().length === 0) {
+        <div class="state state--empty">
+          <span class="state__icon"><app-icon name="money" /></span>
+          <h3 class="state__title">No tienes tarifas</h3>
+          <p class="state__text">Restaura las del mercado para empezar, o agrega las tuyas una por una.</p>
+          <div class="state__actions"><button class="btn btn--primary" type="button" (click)="resetToMarket()"><app-icon name="reset" />Usar tarifas del mercado</button></div>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table table--stack">
+            <thead><tr><th scope="col">Rol</th><th scope="col" class="num">Valor hora</th><th scope="col" class="num">Mercado</th><th scope="col"><span class="sr-only">Acciones</span></th></tr></thead>
+            <tbody>
+              @for (rate of rates(); track rate.id) {
+                @if (editingId() === rate.id) {
+                  <tr style="background: var(--surface-2)">
+                    <td class="cell-head"><span class="row"><span class="swatch" [class]="'swatch--' + roleColor(rate.role)"></span><span class="strong">{{ rate.role }}</span><span class="badge badge--outline">Editando</span></span></td>
+                    <td class="num" data-label="Valor hora">
+                      <form [formGroup]="editForm" (ngSubmit)="save(rate)">
+                        <div class="input-affix input-affix--prefix" style="display: inline-flex; width: 150px">
+                          <span class="input-affix__prefix">$</span>
+                          <input class="input tabular" type="number" min="1" step="1000" formControlName="hourly_rate" [attr.aria-label]="'Valor hora de ' + rate.role" style="min-height: 36px; text-align: right" />
+                        </div>
+                      </form>
+                    </td>
+                    <td class="num subtle" data-label="Mercado">{{ market()[rate.role] ? cop(market()[rate.role]) : '—' }}</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--primary btn--sm" type="button" (click)="save(rate)" [disabled]="saving()">Guardar</button>
+                        <button class="btn btn--ghost btn--sm" type="button" (click)="cancel()">Cancelar</button>
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                  <tr>
+                    <td class="cell-head"><span class="row"><span class="swatch" [class]="'swatch--' + roleColor(rate.role)"></span><span class="strong">{{ rate.role }}</span></span></td>
+                    <td class="num strong" data-label="Valor hora">{{ cop(rate.hourly_rate) }}</td>
+                    <td class="num subtle" data-label="Mercado">{{ market()[rate.role] ? cop(market()[rate.role]) : '—' }}</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--ghost btn--sm" type="button" (click)="edit(rate)"><app-icon name="edit" />Editar</button>
+                        <button class="btn btn--ghost btn--icon btn--sm" type="button" (click)="remove(rate)" [attr.aria-label]="'Eliminar ' + rate.role" title="Eliminar"><app-icon name="trash" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="card__footer"><span class="hint">Las cotizaciones en borrador toman las tarifas nuevas la próxima vez que se recalculan (al editarlas o analizarlas). Las enviadas conservan su precio.</span></div>
+      }
+    </section>
+  </div>
+</main>

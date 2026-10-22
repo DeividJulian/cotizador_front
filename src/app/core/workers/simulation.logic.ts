@@ -1,24 +1,24 @@
 /**
- * Simulación Monte Carlo de la estimación PERT.
- * Cada módulo tiene tres estimaciones (optimista, probable, pesimista). En vez de sumar solo el
- * promedio, se sortean miles de "proyectos posibles" con la distribución Beta-PERT y se mide
- * cuántas horas (y qué precio) cubren el 50 %, 80 % o 90 % de los casos.
+ * Monte Carlo simulation of the PERT estimate.
+ * Each module has three estimates (optimistic, most likely, pessimistic). Instead of adding only the
+ * average, thousands of "possible projects" are drawn with the Beta-PERT distribution to measure
+ * how many hours (and what price) cover 50 %, 80 % or 90 % of the cases.
  *
- * Es lógica pura (sin Angular ni DOM): corre igual en un Web Worker o en el hilo principal.
+ * Pure logic (no Angular or DOM): it runs the same in a Web Worker or on the main thread.
  */
 
 export interface PertItem {
-  optimista: number;
-  probable: number;
-  pesimista: number;
+  optimistic: number;
+  likely: number;
+  pessimistic: number;
 }
 
 export interface SimulationJob {
   items: PertItem[];
   runs: number;
-  /** Horas que prometería la cotización (la suma de horas esperadas) */
+  /** Hours the quote promises (the sum of expected hours) */
   plannedHours: number;
-  /** Precio final por hora de esfuerzo (total con margen e IVA / horas esperadas) */
+  /** Final price per hour of effort (total with margin and VAT / expected hours) */
   pricePerHour: number;
 }
 
@@ -36,7 +36,7 @@ export interface SimulationOutput {
   p50: number;
   p80: number;
   p90: number;
-  /** Probabilidad (0-1) de que el proyecto necesite más horas de las cotizadas */
+  /** Probability (0-1) that the project needs more hours than quoted */
   probOverPlan: number;
   priceP50: number;
   priceP80: number;
@@ -64,7 +64,7 @@ function normal(random: () => number): number {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-/** Muestra de Gamma(alfa, 1) con alfa >= 1 (Marsaglia-Tsang). */
+/** Sample of Gamma(alpha, 1) with alpha >= 1 (Marsaglia-Tsang). */
 function gamma(alpha: number, random: () => number): number {
   const d = alpha - 1 / 3;
   const c = 1 / Math.sqrt(9 * d);
@@ -81,9 +81,9 @@ function gamma(alpha: number, random: () => number): number {
   }
 }
 
-/** Muestra de la distribución Beta-PERT escalada al rango [optimista, pesimista]. */
+/** Sample of the Beta-PERT distribution scaled to [optimistic, pessimistic]. */
 export function samplePert(item: PertItem, random: () => number): number {
-  const { optimista: o, probable: m, pesimista: p } = item;
+  const { optimistic: o, likely: m, pessimistic: p } = item;
   if (p <= o) return m;
   const alpha = 1 + (4 * (m - o)) / (p - o);
   const beta = 1 + (4 * (p - m)) / (p - o);

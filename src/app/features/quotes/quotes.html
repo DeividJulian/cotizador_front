@@ -1,52 +1,98 @@
-<section class="page">
-  <div class="page-head">
+<main class="page">
+  <div class="page-header">
     <div>
-      <p class="eyebrow">Your projects</p>
-      <h1>My quotes</h1>
+      <h1 class="page-title">Mis cotizaciones</h1>
+      <p class="page-subtitle">{{ quotes().length }} cotizaciones · haz clic en una fila para abrirla.</p>
     </div>
-    <div class="row">
-      <label style="min-width: 180px">
-        Status
-        <select [ngModel]="filter()" (ngModelChange)="filter.set($event)">
-          <option value="">All</option>
-          @for (s of statuses; track s) {
-            <option [value]="s">{{ statusLabels[s] }}</option>
-          }
-        </select>
-      </label>
-      <a class="btn primary" routerLink="/cotizaciones/nueva">New quote</a>
+    <div class="page-actions">
+      <a class="btn btn--primary" routerLink="/cotizaciones/nueva"><app-icon name="plus" />Nueva cotización</a>
     </div>
   </div>
 
   @if (error(); as message) {
-    <div class="notice error row">
-      <span>{{ message }}</span><span class="spacer"></span>
-      <button class="btn small" type="button" (click)="load()">Retry</button>
-    </div>
+    <section class="card">
+      <div class="state state--error" role="alert">
+        <span class="state__icon"><app-icon name="warning" /></span>
+        <h2 class="state__title">No pudimos cargar tus cotizaciones</h2>
+        <p class="state__text">{{ message }}</p>
+        <div class="state__actions"><button class="btn btn--primary" type="button" (click)="load()"><app-icon name="refresh" />Reintentar</button></div>
+      </div>
+    </section>
   } @else if (loading()) {
-    <div class="card"><div class="skeleton"></div></div>
-  } @else if (quotes().length === 0) {
-    <div class="empty">There are no quotes with this filter. Create a new one or load the examples from the Dashboard.</div>
-  } @else {
-    <div class="card table-wrap">
-      <table>
-        <thead>
-          <tr><th>Code</th><th>Project</th><th>For</th><th>Status</th><th class="num">Total</th><th>Updated</th></tr>
-        </thead>
-        <tbody>
-          @for (q of quotes(); track q.id) {
-            <tr>
-              <td><a [routerLink]="['/cotizaciones', q.id]">{{ code(q.id) }}</a></td>
-              <td><a [routerLink]="['/cotizaciones', q.id]"><strong>{{ q.titulo }}</strong></a></td>
-              <td class="small">{{ forWhom(q) }}</td>
-              <td><span class="badge" [class]="q.estado">{{ statusLabels[q.estado] }}</span></td>
-              <td class="num money">{{ q.total ? cop(q.total) : '—' }}</td>
-              <td class="small subtle">{{ shortDate(q.actualizada_en) }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      <p class="small subtle" style="margin-top: 10px">{{ quotes().length }} quotes · total {{ cop(total()) }}</p>
+    <div class="card" aria-busy="true" aria-label="Cargando cotizaciones">
+      <div class="card__header"><span class="skeleton skeleton--title"></span></div>
+      <div class="card__body stack stack--sm">
+        <span class="skeleton skeleton--row"></span>
+        <span class="skeleton skeleton--row"></span>
+        <span class="skeleton skeleton--row" style="width: 80%"></span>
+      </div>
     </div>
+  } @else if (quotes().length === 0) {
+    <section class="card">
+      <div class="state state--empty">
+        <span class="state__icon"><app-icon name="quotes" /></span>
+        <h2 class="state__title">Todavía no tienes cotizaciones</h2>
+        <p class="state__text">Describe tu primer proyecto o carga los ejemplos desde el Panel.</p>
+        <div class="state__actions"><a class="btn btn--primary" routerLink="/cotizaciones/nueva"><app-icon name="plus" />Nueva cotización</a></div>
+      </div>
+    </section>
+  } @else {
+    <section class="card">
+      <div class="table-toolbar">
+        <div class="segmented" role="group" aria-label="Filtrar por estado">
+          <button class="segmented__item" [class.is-active]="filter() === ''" [attr.aria-pressed]="filter() === ''" type="button" (click)="filter.set('')">
+            Todas <span class="tab__count">{{ quotes().length }}</span>
+          </button>
+          @for (s of statuses; track s) {
+            <button class="segmented__item" [class.is-active]="filter() === s" [attr.aria-pressed]="filter() === s" type="button" (click)="filter.set(s)">
+              {{ statusLabels[s] }} <span class="tab__count">{{ counts()[s] ?? 0 }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (visible().length === 0) {
+        <div class="state state--empty">
+          <span class="state__icon"><app-icon name="filter" /></span>
+          <h2 class="state__title">No tienes cotizaciones {{ emptyLabels[filter() || "draft"] }}</h2>
+          <p class="state__text">Nada coincide con este filtro.</p>
+          <div class="state__actions"><button class="btn btn--secondary" type="button" (click)="filter.set('')">Ver todas</button></div>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table table--hover table--stack">
+            <thead>
+              <tr>
+                <th scope="col">Código</th><th scope="col">Proyecto</th><th scope="col">Para</th>
+                <th scope="col">Estado</th><th scope="col" class="num">Total</th><th scope="col" class="num">Actualizada</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (q of visible(); track q.id) {
+                <tr (click)="open(q.id)">
+                  <td data-label="Código"><span class="mono subtle">{{ code(q.id) }}</span></td>
+                  <td class="cell-head" data-label="Proyecto">
+                    <a class="table__primary" [routerLink]="['/cotizaciones', q.id]" (click)="$event.stopPropagation()">{{ q.title }}</a>
+                  </td>
+                  <td data-label="Para">
+                    @if (q.client_name || q.client_company) {
+                      {{ q.client_name ?? q.client_company }}
+                      @if (q.client_name && q.client_company) {
+                        <span class="table__secondary">{{ q.client_company }}</span>
+                      }
+                    } @else {
+                      <span class="subtle">—</span>
+                    }
+                  </td>
+                  <td data-label="Estado"><span class="badge badge--dot" [class]="'badge--' + q.status">{{ statusLabels[q.status] }}</span></td>
+                  <td class="num strong" data-label="Total">{{ q.total ? cop(q.total) : '—' }}</td>
+                  <td class="num subtle" data-label="Actualizada">{{ shortDate(q.updated_at) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
   }
-</section>
+</main>

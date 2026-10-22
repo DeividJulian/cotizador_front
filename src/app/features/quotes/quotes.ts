@@ -1,50 +1,65 @@
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
-import { QuoteStatus, QuoteSummary, STATUS_LABELS, quoteCode } from '../../core/models';
+import { QuoteStatus, QuoteSummary, STATUSES, STATUS_LABELS, quoteCode } from '../../core/models';
 import { QuoteService } from '../../core/services/quote.service';
 import { cop, shortDate } from '../../core/utils/format';
 import { errorMessage } from '../../core/utils/http-error';
 import { TabSyncService } from '../../core/workers/tab-sync.service';
+import { Icon } from '../../shared/icon/icon';
 
 @Component({
   selector: 'app-quotes',
-  imports: [FormsModule, RouterLink],
+  imports: [RouterLink, Icon],
   templateUrl: './quotes.html',
 })
 export class Quotes {
   private readonly quotesService = inject(QuoteService);
   private readonly sync = inject(TabSyncService);
+  private readonly router = inject(Router);
 
   protected readonly cop = cop;
   protected readonly shortDate = shortDate;
   protected readonly code = quoteCode;
   protected readonly statusLabels = STATUS_LABELS;
-  protected readonly statuses = Object.keys(STATUS_LABELS) as QuoteStatus[];
+  protected readonly statuses = STATUSES;
+  protected readonly emptyLabels: Record<QuoteStatus, string> = {
+    draft: 'en borrador',
+    sent: 'enviadas',
+    accepted: 'aceptadas',
+    rejected: 'rechazadas',
+  };
 
+  /** All the user's quotes: the filter works on the client so every tab can show its count. */
   protected readonly quotes = signal<QuoteSummary[]>([]);
   protected readonly filter = signal<QuoteStatus | ''>('');
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly total = computed(() => this.quotes().reduce((sum, q) => sum + q.total, 0));
+  protected readonly visible = computed(() => {
+    const status = this.filter();
+    return status ? this.quotes().filter((q) => q.status === status) : this.quotes();
+  });
+
+  protected readonly counts = computed(() => {
+    const counts: Partial<Record<QuoteStatus, number>> = {};
+    for (const q of this.quotes()) counts[q.status] = (counts[q.status] ?? 0) + 1;
+    return counts;
+  });
 
   constructor() {
     effect(() => {
       this.sync.remoteChanges();
-      const status = this.filter();
-      untracked(() => this.load(status));
+      untracked(() => this.load());
     });
   }
 
-  /** Para quién es el proyecto (opcional). */
-  protected forWhom(q: QuoteSummary): string {
-    return [q.cliente_nombre, q.cliente_empresa].filter(Boolean).join(' · ') || '—';
+  protected open(id: number): void {
+    void this.router.navigate(['/cotizaciones', id]);
   }
 
-  protected load(status: QuoteStatus | '' = this.filter()): void {
-    this.quotesService.list(status).subscribe({
+  protected load(): void {
+    this.quotesService.list().subscribe({
       next: (quotes) => {
         this.quotes.set(quotes);
         this.error.set(null);

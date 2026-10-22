@@ -5,11 +5,13 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { errorMessage } from '../../core/utils/http-error';
+import { Icon } from '../../shared/icon/icon';
+import { AuthPitch } from './auth-pitch';
 import { CodeStep } from './code-step';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, CodeStep],
+  imports: [ReactiveFormsModule, RouterLink, CodeStep, AuthPitch, Icon],
   templateUrl: './register.html',
 })
 export class Register {
@@ -22,7 +24,7 @@ export class Register {
   protected readonly sending = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
   });
 
@@ -34,14 +36,14 @@ export class Register {
     const v = this.form.getRawValue();
     const email = v.email.trim().toLowerCase();
     this.sending.set(true);
-    this.auth.register({ nombre: v.nombre.trim(), email }).subscribe({
+    this.auth.register({ name: v.name.trim(), email }).subscribe({
       next: () => {
         this.sending.set(false);
         this.sentTo.set(email);
       },
       error: (err) => {
         this.sending.set(false);
-        this.toast.error(errorMessage(err));
+        this.toast.error('No pudimos crear la cuenta', errorMessage(err));
       },
     });
   }

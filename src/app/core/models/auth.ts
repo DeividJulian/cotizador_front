@@ -1,22 +1,22 @@
 export interface User {
   id: number;
-  nombre: string;
+  name: string;
   email: string;
-  creado_en: string;
-  ultimo_acceso: string | null;
+  created_at: string;
+  last_login_at: string | null;
 }
 
 export interface Session {
   token: string;
-  usuario: User;
+  user: User;
 }
 
 export interface RegisterInput {
-  nombre: string;
+  name: string;
   email: string;
 }
 
 export interface CodeSent {
-  mensaje: string;
+  message: string;
   email: string;
 }

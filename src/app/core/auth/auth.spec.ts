@@ -21,16 +21,16 @@ function fakeToken(secondsFromNow: number): string {
 function session(secondsFromNow = 3600): Session {
   return {
     token: fakeToken(secondsFromNow),
-    usuario: {
-      id: 1, nombre: 'Ana', email: 'ana@pyme.com',
-      creado_en: '2026-10-01T00:00:00Z', ultimo_acceso: null,
+    user: {
+      id: 1, name: 'Ana', email: 'ana@pyme.com',
+      created_at: '2026-10-01T00:00:00Z', last_login_at: null,
     },
   };
 }
 
 function storeSession(secondsFromNow = 3600): Session {
   const value = session(secondsFromNow);
-  localStorage.setItem('cotizador.session', JSON.stringify(value));
+  localStorage.setItem('cotizador.session.v2', JSON.stringify(value));
   return value;
 }
 
@@ -67,7 +67,7 @@ describe('sesión por código e interceptor', () => {
     auth.requestCode('ana@pyme.com').subscribe();
     const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/login`);
     expect(request.request.body).toEqual({ email: 'ana@pyme.com' });
-    request.flush({ mensaje: 'sent', email: 'ana@pyme.com' });
+    request.flush({ message: 'sent', email: 'ana@pyme.com' });
     expect(auth.isLoggedIn()).toBe(false);
   });
 
@@ -77,14 +77,14 @@ describe('sesión por código e interceptor', () => {
     const expected = session();
     auth.verify('ana@pyme.com', '123456').subscribe();
 
-    const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/verificar`);
+    const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/verify`);
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ email: 'ana@pyme.com', codigo: '123456' });
+    expect(request.request.body).toEqual({ email: 'ana@pyme.com', code: '123456' });
     request.flush(expected);
 
     expect(auth.isLoggedIn()).toBe(true);
     expect(auth.user()?.email).toBe('ana@pyme.com');
-    expect(JSON.parse(localStorage.getItem('cotizador.session')!).token).toBe(expected.token);
+    expect(JSON.parse(localStorage.getItem('cotizador.session.v2')!).token).toBe(expected.token);
   });
 
   it('un código incorrecto no deja sesión', () => {
@@ -92,10 +92,10 @@ describe('sesión por código e interceptor', () => {
     const auth = TestBed.inject(AuthService);
     auth.verify('ana@pyme.com', '000000').subscribe({ error: () => undefined });
     TestBed.inject(HttpTestingController)
-      .expectOne(`${API_URL}/auth/verificar`)
+      .expectOne(`${API_URL}/auth/verify`)
       .flush({ detail: 'Incorrect code' }, { status: 400, statusText: 'Bad Request' });
     expect(auth.isLoggedIn()).toBe(false);
-    expect(localStorage.getItem('cotizador.session')).toBeNull();
+    expect(localStorage.getItem('cotizador.session.v2')).toBeNull();
   });
 
   it('restaura la sesión guardada (el progreso no se pierde al recargar) y descarta la vencida', () => {
@@ -133,7 +133,7 @@ describe('sesión por código e interceptor', () => {
       .flush({ detail: 'Session expired' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(auth.isLoggedIn()).toBe(false);
-    expect(localStorage.getItem('cotizador.session')).toBeNull();
+    expect(localStorage.getItem('cotizador.session.v2')).toBeNull();
   });
 
   it('cerrar sesión borra la sesión guardada', () => {
@@ -142,7 +142,7 @@ describe('sesión por código e interceptor', () => {
     const auth = TestBed.inject(AuthService);
     auth.logout();
     expect(auth.isLoggedIn()).toBe(false);
-    expect(localStorage.getItem('cotizador.session')).toBeNull();
+    expect(localStorage.getItem('cotizador.session.v2')).toBeNull();
   });
 });
 

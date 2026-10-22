@@ -6,9 +6,10 @@ import { Observable, tap } from 'rxjs';
 import { API_URL } from '../config/api.config';
 import { CodeSent, RegisterInput, Session, User } from '../models';
 
-const STORAGE_KEY = 'cotizador.session';
+// v2: sessions saved before the API moved to English names are dropped (the user logs in again)
+const STORAGE_KEY = 'cotizador.session.v2';
 
-/** true si el token JWT ya venció (o no se puede leer). */
+/** true when the JWT already expired (or cannot be read). */
 export function tokenExpired(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
@@ -21,15 +22,15 @@ export function tokenExpired(token: string): boolean {
 function readStoredSession(): Session | null {
   try {
     const session = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as Session | null;
-    return session?.token && !tokenExpired(session.token) ? session : null;
+    return session?.token && session.user && !tokenExpired(session.token) ? session : null;
   } catch {
     return null;
   }
 }
 
 /**
- * Sesión sin contraseña: el usuario pide un código de 6 dígitos por correo y lo canjea por un token.
- * Se guarda en localStorage para que la sesión (y el progreso) sobreviva a recargar la página.
+ * Passwordless session: the user asks for a 6-digit code by email and exchanges it for a token.
+ * It is kept in localStorage so the session (and the progress) survives a page reload.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -39,30 +40,30 @@ export class AuthService {
 
   private readonly session = signal<Session | null>(readStoredSession());
 
-  readonly user = computed(() => this.session()?.usuario ?? null);
+  readonly user = computed(() => this.session()?.user ?? null);
   readonly token = computed(() => this.session()?.token ?? null);
   readonly isLoggedIn = computed(() => this.session() !== null);
 
   register(input: RegisterInput): Observable<CodeSent> {
-    return this.http.post<CodeSent>(`${this.url}/registro`, input);
+    return this.http.post<CodeSent>(`${this.url}/register`, input);
   }
 
-  /** Envía un código de acceso al correo (sirve también para reenviar el de registro). */
+  /** Emails a login code (it also resends the sign-up code). */
   requestCode(email: string): Observable<CodeSent> {
     return this.http.post<CodeSent>(`${this.url}/login`, { email });
   }
 
-  verify(email: string, codigo: string): Observable<Session> {
-    return this.http.post<Session>(`${this.url}/verificar`, { email, codigo }).pipe(tap((session) => this.store(session)));
+  verify(email: string, code: string): Observable<Session> {
+    return this.http.post<Session>(`${this.url}/verify`, { email, code }).pipe(tap((session) => this.store(session)));
   }
 
-  /** Confirma con el backend que la sesión guardada sigue siendo válida. */
+  /** Checks with the backend that the saved session is still valid. */
   refreshProfile(): void {
     const current = this.session();
     if (!current) return;
     this.http.get<User>(`${this.url}/me`).subscribe({
-      next: (usuario) => this.store({ ...current, usuario }),
-      error: () => undefined, // un 401 lo maneja el interceptor cerrando la sesión
+      next: (user) => this.store({ ...current, user }),
+      error: () => undefined, // a 401 is handled by the interceptor, which logs out
     });
   }
 
@@ -71,9 +72,9 @@ export class AuthService {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
-      // almacenamiento bloqueado: basta con olvidar la sesión en memoria
+      // storage blocked: forgetting the session in memory is enough
     }
-    // Las respuestas guardadas por el Service Worker son de este usuario: no deben verse con otra cuenta
+    // The responses cached by the Service Worker belong to this user: another account must not see them
     if (typeof caches !== 'undefined') {
       void caches.keys().then((names) => names.filter((n) => n.startsWith('cot-api')).forEach((n) => caches.delete(n)));
     }
@@ -85,7 +86,7 @@ export class AuthService {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     } catch {
-      // sin almacenamiento la sesión dura hasta recargar
+      // without storage the session lasts until the page reloads
     }
   }
 }

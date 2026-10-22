@@ -1,7 +1,7 @@
 /**
- * Convierte el Markdown de la propuesta comercial a HTML.
- * Primero escapa todo el HTML, así que el resultado es seguro para [innerHTML].
- * Soporta: títulos, negrita, citas, listas, tablas y párrafos.
+ * Turns the Markdown of the commercial proposal into HTML.
+ * It escapes all the HTML first, so the result is safe for [innerHTML].
+ * Supports: headings, bold, quotes, lists, tables and paragraphs.
  */
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -13,7 +13,9 @@ function inline(text: string): string {
 
 function tableRow(line: string, tag: 'th' | 'td'): string {
   const cells = line.trim().replace(/^\||\|$/g, '').split('|');
-  return '<tr>' + cells.map((c) => `<${tag}>${inline(c.trim())}</${tag}>`).join('') + '</tr>';
+  // A bold "Total" first cell marks the row that closes the table
+  const isTotal = tag === 'td' && /^\*\*total\*\*$/i.test(cells[0]?.trim() ?? '');
+  return (isTotal ? '<tr class="doc__total">' : '<tr>') + cells.map((c) => `<${tag}>${inline(c.trim())}</${tag}>`).join('') + '</tr>';
 }
 
 export function renderMarkdown(markdown: string): string {

@@ -1,101 +1,278 @@
-<section class="page">
-  <a class="small" routerLink="/cotizaciones">← Back to quotes</a>
-  <div class="page-head">
-    <div>
-      <p class="eyebrow">Step 1 · describe the project</p>
-      <h1>New quote</h1>
+<main class="page" [formGroup]="form">
+  <div class="stack stack--sm">
+    <a class="back-link" routerLink="/cotizaciones"><app-icon name="back" />Mis cotizaciones</a>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Nueva cotización</h1>
+        <p class="page-subtitle">
+          @switch (step()) {
+            @case (1) { Tres pasos cortos. Empieza por el nombre del proyecto. }
+            @case (2) { El paso 2 es el que define tu precio: describe bien el trabajo. }
+            @case (3) { Último paso: decide cuánto margen y ganancia sumar a las horas. }
+          }
+        </p>
+      </div>
     </div>
   </div>
 
-  <form class="grid cols-2" [formGroup]="form" (ngSubmit)="save()">
-    <div class="card form">
-      <h2>Project details</h2>
+  <ol class="stepper" aria-label="Progreso">
+    <li class="stepper__item" [class.is-done]="step() > 1" [class.is-current]="step() === 1" [attr.aria-current]="step() === 1 ? 'step' : null">
+      <span class="stepper__num">@if (step() > 1) { <app-icon name="check" /> } @else { 1 }</span>
+      <span class="stepper__text"><span class="stepper__label">Proyecto</span><span class="stepper__meta">{{ form.controls.title.value || 'Título y cliente' }}</span></span>
+    </li>
+    <li class="stepper__item" [class.is-done]="step() > 2" [class.is-current]="step() === 2" [attr.aria-current]="step() === 2 ? 'step' : null">
+      <span class="stepper__num">@if (step() > 2) { <app-icon name="check" /> } @else { 2 }</span>
+      <span class="stepper__text">
+        <span class="stepper__label">Alcance</span>
+        <span class="stepper__meta">{{ step() > 2 ? words() + ' palabras · ' + modules().length + ' módulos en la vista previa' : 'Describe el trabajo' }}</span>
+      </span>
+    </li>
+    <li class="stepper__item" [class.is-current]="step() === 3" [attr.aria-current]="step() === 3 ? 'step' : null">
+      <span class="stepper__num">3</span>
+      <span class="stepper__text"><span class="stepper__label">Precio</span><span class="stepper__meta">Margen, contingencia, descuento e IVA</span></span>
+    </li>
+  </ol>
 
-      <label>
-        Project title
-        <input formControlName="titulo" placeholder="e.g. Online store for a coffee shop" />
-        @if (form.controls.titulo.touched && form.controls.titulo.invalid) {
-          <span class="error-text">Enter a title of at least 3 characters.</span>
-        }
-      </label>
-
-      <div class="two">
-        <label>
-          Who is it for? (optional)
-          <input formControlName="cliente_nombre" placeholder="Your client's name" />
-        </label>
-        <label>
-          Company (optional)
-          <input formControlName="cliente_empresa" />
-        </label>
-      </div>
-
-      <label>
-        Scope description
-        <textarea formControlName="descripcion_alcance" rows="9"
-          placeholder="Describe what the client needs, in Spanish: catálogo, pagos en línea, panel de administración, reportes, inicio de sesión…"></textarea>
-        <span class="hint">
-          The more detail, the more accurate the estimate. Minimum 10 characters. Write it in Spanish: the module
-          detector uses Spanish keywords.
-        </span>
-        @if (form.controls.descripcion_alcance.touched && form.controls.descripcion_alcance.invalid) {
-          <span class="error-text">Describe the scope with at least 10 characters.</span>
-        }
-      </label>
-
-      <div>
-        <button class="btn" type="button" (click)="runPreview()" [disabled]="previewing()">
-          {{ previewing() ? 'Analyzing…' : 'Preview analysis' }}
-        </button>
-      </div>
-    </div>
-
-    <div class="grid" style="align-content: start">
-      <div class="card form">
-        <h2>Financial parameters</h2>
-        <div class="two">
-          <label>Margin (%) <input type="number" min="0" max="200" formControlName="margen_pct" /></label>
-          <label>Contingency (%) <input type="number" min="0" max="100" formControlName="contingencia_pct" /></label>
-        </div>
-        <div class="two">
-          <label>Discount (%) <input type="number" min="0" max="50" formControlName="descuento_pct" /></label>
-          <label>VAT (%) <input type="number" min="0" max="30" formControlName="iva_pct" /></label>
-        </div>
-        <div class="row">
-          <button class="btn primary" type="submit" [disabled]="saving()">
-            {{ saving() ? 'Creating and analyzing…' : 'Create and analyze with AI' }}
-          </button>
-        </div>
-        <p class="small subtle">It is created as a draft and the system calculates modules, hours and price automatically.</p>
-      </div>
-
-      @if (preview(); as p) {
-        <div class="card">
-          <h2>What the analysis detected</h2>
-          <div class="row small" style="margin-bottom: 10px">
-            <span class="chip">{{ p.analisis.modulos.length }} modules</span>
-            <span class="chip">{{ num(p.estimacion.horas_esperadas) }} expected hours</span>
-            <span class="chip">{{ level(p.analisis.confianza) }} confidence</span>
+  @switch (step()) {
+    @case (1) {
+      <section class="card">
+        <div class="card__header"><div><h2 class="card__title">¿Qué proyecto vas a cotizar?</h2><p class="card__subtitle">Así aparecerá en tu lista y en la propuesta.</p></div></div>
+        <div class="card__body stack">
+          <div class="field" [class.field--error]="form.controls.title.touched && form.controls.title.invalid">
+            <label class="label" for="q-title">Título del proyecto</label>
+            <input class="input" id="q-title" formControlName="title" placeholder="Ej. Tienda en línea para una cafetería" />
+            @if (form.controls.title.touched && form.controls.title.invalid) {
+              <span class="error-text">Escribe un título de al menos 3 caracteres.</span>
+            }
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Module</th><th>Complexity</th><th class="num">Hours</th></tr></thead>
-              <tbody>
-                @for (item of p.items; track item.nombre) {
-                  <tr>
-                    <td>{{ item.nombre }}</td>
-                    <td><span class="badge" [class]="item.complejidad">{{ level(item.complejidad) }}</span></td>
-                    <td class="num">{{ num(item.horas_esperadas) }}</td>
-                  </tr>
+          <div class="form-row">
+            <div class="field">
+              <label class="label" for="q-client">¿Para quién es?<span class="label__optional">opcional</span></label>
+              <input class="input" id="q-client" formControlName="client_name" placeholder="Nombre de tu cliente" />
+            </div>
+            <div class="field">
+              <label class="label" for="q-company">Empresa<span class="label__optional">opcional</span></label>
+              <input class="input" id="q-company" formControlName="client_company" placeholder="Ej. Café La Montaña SAS" />
+            </div>
+          </div>
+          <span class="hint">El nombre del cliente solo aparece en la propuesta: nunca se envía a la IA.</span>
+        </div>
+      </section>
+      <div class="wizard-footer">
+        <a class="btn btn--secondary" routerLink="/cotizaciones"><app-icon name="back" />Cancelar</a>
+        <button class="btn btn--primary btn--lg" type="button" (click)="goTo(2)">Continuar con el alcance<app-icon name="forward" /></button>
+      </div>
+    }
+
+    @case (2) {
+      <div class="step-summary">
+        <div class="step-summary__item"><span class="step-summary__label">Proyecto</span><span class="step-summary__value">{{ form.controls.title.value }}</span></div>
+        @if (form.controls.client_name.value) {
+          <div class="step-summary__item"><span class="step-summary__label">¿Para quién es?</span><span class="step-summary__value">{{ form.controls.client_name.value }}</span></div>
+        }
+        @if (form.controls.client_company.value) {
+          <div class="step-summary__item"><span class="step-summary__label">Empresa</span><span class="step-summary__value">{{ form.controls.client_company.value }}</span></div>
+        }
+        <span class="spacer"></span>
+        <button class="btn btn--ghost btn--sm" type="button" (click)="goTo(1)"><app-icon name="edit" />Editar</button>
+      </div>
+
+      <div class="grid grid--main-aside">
+        <div class="stack stack--lg">
+          <section class="card">
+            <div class="card__header">
+              <div><h2 class="card__title">Describe el alcance del proyecto</h2><p class="card__subtitle">Escríbelo como te lo explicó tu cliente.</p></div>
+              <span class="badge badge--recommended">Lo más importante</span>
+            </div>
+            <div class="card__body stack">
+              <div class="callout callout--ai">
+                <app-icon name="sparkle" />
+                <div>
+                  <div class="callout__title">Este texto define toda la estimación</div>
+                  La IA lo lee para detectar los módulos y estimar las horas, y las horas definen el precio. Una
+                  descripción vaga da un precio vago.
+                </div>
+              </div>
+              <div class="field" [class.field--error]="form.controls.scope_description.touched && form.controls.scope_description.invalid">
+                <label class="label" for="q-scope">Descripción del alcance</label>
+                <div class="scope-editor">
+                  <textarea class="textarea textarea--scope" id="q-scope" lang="es" formControlName="scope_description"
+                    aria-describedby="q-scope-hint"
+                    placeholder="Ej. Necesito una tienda en línea donde los clientes se registren, vean el catálogo, paguen con PSE o tarjeta y reciban un correo al confirmar el pedido. El administrador necesita un panel para productos, inventario y pedidos…"></textarea>
+                  <div class="scope-editor__bar">
+                    <span class="quality" [attr.aria-label]="'Detalle de la descripción: ' + qualityLabel()">
+                      <span class="quality__bars" aria-hidden="true">
+                        @for (i of [1, 2, 3, 4]; track i) { <i [class.is-on]="quality() >= i"></i> }
+                      </span>
+                      Detalle: {{ qualityLabel() }}
+                    </span>
+                    <span class="xsmall subtle tabular">{{ words() }} palabras</span>
+                    <span class="spacer"></span>
+                    <button class="btn btn--ai-soft btn--sm" type="button" (click)="runPreview()" [disabled]="previewing()">
+                      @if (previewing()) { <span class="spinner spinner--ai"></span>Analizando… } @else { <app-icon name="sparkle" />Vista previa del análisis }
+                    </button>
+                  </div>
+                </div>
+                @if (form.controls.scope_description.touched && form.controls.scope_description.invalid) {
+                  <span class="error-text">Describe el alcance con al menos 10 caracteres.</span>
                 }
-              </tbody>
-            </table>
-          </div>
-          @for (warning of p.analisis.advertencias; track warning) {
-            <p class="small" style="color: var(--warn); margin-top: 8px">{{ warning }}</p>
+                <span class="hint" id="q-scope-hint">Menciona usuarios, funciones, pagos, integraciones y plataformas. No pongas precios aquí: salen de tus tarifas.</span>
+              </div>
+            </div>
+          </section>
+
+          @if (previewError(); as message) {
+            <div class="callout callout--warning" role="alert">
+              <app-icon name="warning" />
+              <div><div class="callout__title">No pudimos estimar este alcance</div>{{ message }}</div>
+            </div>
+          } @else if (preview(); as p) {
+            <section class="card" aria-live="polite">
+              <div class="card__header">
+                <div>
+                  <h2 class="card__title">Vista previa · {{ modules().length }} módulos detectados</h2>
+                  <p class="card__subtitle">
+                    @if (stalePreview()) { Cambiaste la descripción: vuelve a pedir la vista previa. } @else { Un primer vistazo. El análisis completo se hace al crear la cotización. }
+                  </p>
+                </div>
+                <span class="formula">Total <code>≈ {{ num(p.estimate.hours_expected) }} h</code></span>
+              </div>
+              <div class="card__body" style="padding-top: 4px; padding-bottom: 4px">
+                <ul class="module-list">
+                  @for (m of modules(); track m.name) {
+                    <li class="module-item">
+                      <span class="module-item__name">{{ m.name }}</span>
+                      <span class="module-item__hours">{{ num(m.hours_expected) }} h</span>
+                      <div class="module-item__meta">
+                        <span class="badge" [class]="'badge--' + m.complexity"><span class="cx-bars" aria-hidden="true"><i></i><i></i><i></i></span>{{ level(m.complexity) }}</span>
+                        <span class="xsmall subtle">{{ m.reasons }}</span>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              </div>
+              <div class="card__footer">
+                <span class="meter" title="Confianza del análisis">
+                  <span class="xsmall subtle">Confianza</span>
+                  <span class="meter__track"><span class="meter__fill meter__fill--ai" style="display: block" [style.width.%]="confidenceWidth[p.analysis.confidence] ?? 35"></span></span>
+                  <span class="meter__value">{{ level(p.analysis.confidence) }}</span>
+                </span>
+                @for (w of p.analysis.warnings; track w) {
+                  <span class="xsmall text-warning strong">{{ w }}</span>
+                }
+              </div>
+            </section>
           }
         </div>
-      }
-    </div>
-  </form>
-</section>
+
+        <aside class="stack">
+          <section class="card">
+            <div class="card__header"><h2 class="card__title">Lista para una buena descripción</h2></div>
+            <div class="card__body">
+              <ul class="tips">
+                @for (tip of tips(); track tip.label) {
+                  <li class="tip" [class.is-met]="tip.met">
+                    <span class="tip__check"><app-icon name="check" /></span>
+                    <span>{{ tip.label }}<span class="tip__example">{{ tip.example }}</span></span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </section>
+          <div class="callout callout--neutral">
+            <app-icon name="info" />
+            <div>Después de crear la cotización puedes ajustar horas y agregar módulos a mano.</div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="wizard-footer">
+        <button class="btn btn--secondary" type="button" (click)="goTo(1)"><app-icon name="back" />Atrás</button>
+        <button class="btn btn--primary btn--lg" type="button" (click)="goTo(3)">Continuar con el precio<app-icon name="forward" /></button>
+      </div>
+    }
+
+    @case (3) {
+      <div class="grid grid--main-aside" style="grid-template-columns: minmax(0, 1fr) 420px">
+        <section class="card">
+          <div class="card__header">
+            <div><h2 class="card__title">Parámetros financieros</h2><p class="card__subtitle">Se aplican sobre el costo de las horas × tus tarifas.</p></div>
+          </div>
+          <div class="card__body">
+            <div class="param-grid">
+              <div class="field">
+                <label class="label" for="p-margin">Margen</label>
+                <div class="input-affix input-affix--pct"><input class="input tabular" id="p-margin" type="number" min="0" max="200" formControlName="margin_pct" aria-describedby="p-margin-h" /><span class="input-affix__suffix">%</span></div>
+                <span class="hint" id="p-margin-h">Tu ganancia; se suma después de la contingencia.</span>
+              </div>
+              <div class="field">
+                <label class="label" for="p-cont">Contingencia</label>
+                <div class="input-affix input-affix--pct"><input class="input tabular" id="p-cont" type="number" min="0" max="100" formControlName="contingency_pct" aria-describedby="p-cont-h" /><span class="input-affix__suffix">%</span></div>
+                <span class="hint" id="p-cont-h">Colchón para imprevistos: cambios, errores, demoras.</span>
+              </div>
+              <div class="field">
+                <label class="label" for="p-disc">Descuento</label>
+                <div class="input-affix input-affix--pct"><input class="input tabular" id="p-disc" type="number" min="0" max="50" formControlName="discount_pct" aria-describedby="p-disc-h" /><span class="input-affix__suffix">%</span></div>
+                <span class="hint" id="p-disc-h">Se resta antes del IVA. Usa 0 si no das descuento.</span>
+              </div>
+              <div class="field">
+                <label class="label" for="p-vat">IVA</label>
+                <div class="input-affix input-affix--pct"><input class="input tabular" id="p-vat" type="number" min="0" max="30" formControlName="vat_pct" aria-describedby="p-vat-h" /><span class="input-affix__suffix">%</span></div>
+                <span class="hint" id="p-vat-h">La tarifa general en Colombia es 19 %. Usa 0 si no cobras IVA.</span>
+              </div>
+            </div>
+            <hr class="divider" style="margin: 24px 0" />
+            <div class="callout callout--neutral">
+              <app-icon name="info" />
+              <div>Así se arma el total: <strong>costo directo</strong> (horas × tarifa) <strong>+ contingencia + margen − descuento + IVA</strong>. Verás cada línea en la pestaña Finanzas.</div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card card--accent" aria-labelledby="est-title">
+          <div class="card__header">
+            <div>
+              <h2 class="card__title" id="est-title">Precio estimado</h2>
+              <p class="card__subtitle">Con la vista previa ({{ num(preview()?.estimate?.hours_expected) }} h) y tus tarifas actuales.</p>
+            </div>
+          </div>
+          <div class="card__body stack">
+            @if (previewing() || (pricing() && !price())) {
+              <div class="stack stack--sm" aria-busy="true">
+                <span class="skeleton skeleton--text"></span><span class="skeleton skeleton--text"></span>
+                <span class="skeleton skeleton--text" style="width: 70%"></span><span class="skeleton skeleton--value"></span>
+              </div>
+            } @else if (previewError(); as message) {
+              <div class="callout callout--warning" role="alert">
+                <app-icon name="warning" />
+                <div><div class="callout__title">No se puede calcular el precio</div>{{ message }}</div>
+              </div>
+              <button class="btn btn--secondary btn--block" type="button" (click)="goTo(2)"><app-icon name="back" />Mejorar la descripción</button>
+            } @else if (price(); as f) {
+              <div class="breakdown" [style.opacity]="pricing() ? 0.6 : 1">
+                <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--1"></span>Costo directo</span><span class="breakdown__value">{{ cop(f.direct_cost) }}</span></div>
+                <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--4"></span>+ Contingencia {{ form.controls.contingency_pct.value }} %</span><span class="breakdown__value">{{ cop(f.contingency) }}</span></div>
+                <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--3"></span>+ Margen {{ form.controls.margin_pct.value }} %</span><span class="breakdown__value">{{ cop(f.margin) }}</span></div>
+                @if (f.discount) {
+                  <div class="breakdown__row breakdown__row--sub"><span class="breakdown__label"><span class="swatch"></span>− Descuento {{ form.controls.discount_pct.value }} %</span><span class="breakdown__value">−{{ cop(f.discount) }}</span></div>
+                }
+                <div class="breakdown__row"><span class="breakdown__label"><span class="swatch swatch--2"></span>+ IVA {{ form.controls.vat_pct.value }} %</span><span class="breakdown__value">{{ cop(f.vat) }}</span></div>
+                <div class="breakdown__row breakdown__row--total"><span class="breakdown__label">Total</span><span class="breakdown__value">{{ cop(f.total) }}</span></div>
+              </div>
+              <p class="hint">COP. Los números finales se recalculan después del análisis.</p>
+            }
+            <button class="btn btn--ai btn--lg btn--block" [class.is-loading]="saving()" type="button" (click)="save()"
+              [disabled]="saving() || previewing() || !!previewError() || form.invalid">
+              <app-icon name="sparkle" />Crear y analizar con IA
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="wizard-footer">
+        <button class="btn btn--secondary" type="button" (click)="goTo(2)"><app-icon name="back" />Volver al alcance</button>
+        <span class="hint">Cuando termine el análisis llegarás a la cotización nueva.</span>
+      </div>
+    }
+  }
+</main>

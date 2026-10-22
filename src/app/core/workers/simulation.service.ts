@@ -7,13 +7,13 @@ export type SimulationMode = 'worker' | 'main';
 export interface SimulationRun {
   mode: SimulationMode;
   output: SimulationOutput;
-  /** Tiempo total medido desde la pantalla (incluye el traspaso de datos al worker) */
+  /** Total time measured from the screen (includes handing the data to the worker) */
   wallMs: number;
 }
 
 /**
- * Orquesta la simulación: lo ejecuta en un Web Worker (hilo aparte) o, para comparar,
- * en el hilo principal.
+ * Runs the simulation in a Web Worker (a separate thread) or, to compare,
+ * on the main thread.
  */
 @Injectable({ providedIn: 'root' })
 export class SimulationService {
@@ -45,7 +45,7 @@ export class SimulationService {
   }
 
   private runInWorker(job: SimulationJob): Promise<SimulationOutput> {
-    if (!this.workerSupported) return Promise.reject(new Error('This browser does not support Web Workers'));
+    if (!this.workerSupported) return Promise.reject(new Error('Este navegador no soporta Web Workers'));
 
     return new Promise((resolve, reject) => {
       const worker = new Worker(new URL('./simulation.worker', import.meta.url), { type: 'module' });
@@ -67,14 +67,14 @@ export class SimulationService {
       worker.onerror = (event) => {
         worker.terminate();
         this.worker = null;
-        reject(new Error(event.message || 'The worker failed'));
+        reject(new Error(event.message || 'El worker falló'));
       };
       worker.postMessage(job);
     });
   }
 
   private async runOnMainThread(job: SimulationJob): Promise<SimulationOutput> {
-    // Se cede un instante para que la pantalla muestre "procesando" antes de que el hilo se bloquee
+    // Yields a moment so the screen shows "processing" before the thread blocks
     await new Promise((resolve) => setTimeout(resolve, 60));
     return simulate(job, (fraction) => this.progress.set(fraction));
   }

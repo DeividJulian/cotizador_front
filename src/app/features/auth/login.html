@@ -1,23 +1,33 @@
-<section class="page auth-page">
-  <div class="card form">
-    <p class="eyebrow">AI Quoter</p>
+<div class="auth">
+  <app-auth-pitch variant="login" />
+
+  <section class="auth__panel">
     @if (sentTo(); as email) {
-      <h1>Check your email</h1>
       <app-code-step [email]="email" (verified)="enter()" (back)="sentTo.set(null)" />
     } @else {
-      <h1>Log in</h1>
-      <p class="subtle small">Enter your email and we will send you a 6-digit code. No password needed.</p>
-      <form class="form" [formGroup]="form" (ngSubmit)="requestCode()">
-        <label>
-          Email
-          <input type="email" formControlName="email" autocomplete="email" />
+      <form class="auth-card" novalidate [formGroup]="form" (ngSubmit)="requestCode()">
+        <div class="segmented segmented--block" role="tablist" aria-label="Cuenta">
+          <a class="segmented__item is-active" role="tab" aria-selected="true" routerLink="/login">Iniciar sesión</a>
+          <a class="segmented__item" role="tab" aria-selected="false" routerLink="/registro">Crear cuenta</a>
+        </div>
+        <div>
+          <h2 class="auth-card__title">Qué bueno verte de nuevo</h2>
+          <p class="auth-card__text">Sin contraseña: te enviaremos un código de 6 dígitos al correo.</p>
+        </div>
+        <div class="field" [class.field--error]="form.controls.email.touched && form.controls.email.invalid">
+          <label class="label" for="login-email">Correo</label>
+          <input class="input" id="login-email" type="email" autocomplete="email" inputmode="email"
+            placeholder="tu@correo.com" formControlName="email" />
           @if (form.controls.email.touched && form.controls.email.invalid) {
-            <span class="error-text">Enter a valid email.</span>
+            <span class="error-text">Escribe un correo válido.</span>
           }
-        </label>
-        <button class="btn primary" type="submit" [disabled]="sending()">{{ sending() ? 'Sending…' : 'Send me a code' }}</button>
+        </div>
+        <button class="btn btn--primary btn--lg btn--block" [class.is-loading]="sending()" type="submit" [disabled]="sending()">
+          <app-icon name="mail" />Enviarme un código
+        </button>
+        <p class="auth-card__foot">¿Eres nuevo? <a routerLink="/registro">Crea una cuenta gratis</a></p>
       </form>
-      <p class="small subtle">Don't have an account? <a routerLink="/registro">Sign up</a></p>
     }
-  </div>
-</section>
+    <p class="auth__legal">Tus cotizaciones y tarifas son privadas: solo las ves tú.</p>
+  </section>
+</div>

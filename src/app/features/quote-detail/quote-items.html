@@ -1,97 +1,150 @@
-<div class="card">
-  <div class="row" style="margin-bottom: 12px">
-    <h2 style="margin: 0">Modules and hours</h2>
-    <span class="spacer"></span>
-    @if (editable) {
-      <button class="btn small" type="button" (click)="adding.set(!adding())">{{ adding() ? 'Close' : 'Add module' }}</button>
-    }
+<section class="card" aria-labelledby="mod-title">
+  <div class="card__header">
+    <div>
+      <h2 class="card__title" id="mod-title">Módulos</h2>
+      <p class="card__subtitle">
+        Horas en PERT: optimista, más probable y pesimista.
+        @if (editable()) { Cambia las horas más probables para ajustar la estimación. }
+      </p>
+    </div>
+    <div class="row">
+      <span class="formula">Esperadas = <code>(O + 4·M + P) ÷ 6</code></span>
+      @if (editable()) {
+        <button class="btn btn--secondary btn--sm" type="button" (click)="adding.set(!adding())">
+          <app-icon [name]="adding() ? 'close' : 'plus'" />{{ adding() ? 'Cerrar' : 'Agregar módulo' }}
+        </button>
+      }
+    </div>
   </div>
 
   @if (adding()) {
-    <form class="form notice" [formGroup]="addForm" (ngSubmit)="add()" style="margin-bottom: 14px">
-      <div class="two">
-        <label>Module name <input formControlName="nombre" placeholder="e.g. WhatsApp integration" /></label>
-        <label>
-          Complexity
-          <select formControlName="complejidad">
+    <form class="card__body item-edit stack" [formGroup]="addForm" (ngSubmit)="add()">
+      <div class="form-row">
+        <div class="field" [class.field--error]="addForm.controls.name.touched && addForm.controls.name.invalid">
+          <label class="label" for="add-name">Nombre del módulo</label>
+          <input class="input" id="add-name" formControlName="name" placeholder="Ej.: integración con WhatsApp" />
+          @if (addForm.controls.name.touched && addForm.controls.name.invalid) { <span class="error-text">Escribe al menos 2 caracteres.</span> }
+        </div>
+        <div class="field">
+          <label class="label" for="add-cx">Complejidad</label>
+          <select class="select" id="add-cx" formControlName="complexity">
             @for (c of complexities; track c) { <option [value]="c">{{ level(c) }}</option> }
           </select>
-        </label>
+        </div>
       </div>
-      <label>Most likely hours <input type="number" min="0.5" step="0.5" formControlName="horas_probable" /></label>
-      <div><button class="btn primary" type="submit" [disabled]="busy()">Add and recalculate</button></div>
+      <div class="form-row">
+        <div class="field" [class.field--error]="addForm.controls.hours_likely.touched && addForm.controls.hours_likely.invalid">
+          <label class="label" for="add-hours">Horas más probables</label>
+          <div class="input-affix input-affix--suffix"><input class="input tabular" id="add-hours" type="number" min="0.5" step="0.5" formControlName="hours_likely" /><span class="input-affix__suffix">h</span></div>
+          <span class="hint">El optimista y el pesimista se calculan según la complejidad.</span>
+        </div>
+        <div class="form-actions" style="align-self: end">
+          <button class="btn btn--primary" [class.is-loading]="busy()" type="submit" [disabled]="busy()"><app-icon name="plus" />Agregar y recalcular</button>
+        </div>
+      </div>
     </form>
   }
 
   @if (quote().items.length === 0) {
-    <div class="empty">This quote has no modules yet. Click <strong>Analyze with AI</strong>.</div>
+    <div class="state state--empty">
+      <span class="state__icon"><app-icon name="modules" /></span>
+      <h3 class="state__title">Esta cotización todavía no tiene módulos</h3>
+      <p class="state__text">Pulsa «Analizar con IA» para detectarlos desde el alcance, o agrega uno a mano.</p>
+    </div>
   } @else {
     <div class="table-wrap">
-      <table>
+      <table class="table table--stack">
         <thead>
           <tr>
-            <th>Module</th><th>Complexity</th>
-            <th class="num">Optimistic</th><th class="num">Most likely</th><th class="num">Pessimistic</th><th class="num">Expected</th>
-            <th>Split</th><th></th>
+            <th scope="col">Módulo</th>
+            <th scope="col">Complejidad</th>
+            <th scope="col" class="num">Optimista</th>
+            <th scope="col" class="num">Más probable</th>
+            <th scope="col" class="num">Pesimista</th>
+            <th scope="col" class="num">Esperadas</th>
+            <th scope="col">Reparto por rol</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
           </tr>
         </thead>
         <tbody>
           @for (item of quote().items; track item.id) {
-            @if (editingId() === item.id) {
-              <tr>
-                <td colspan="8">
-                  <form class="form" [formGroup]="editForm" (ngSubmit)="saveEdit(item)">
-                    <div class="two">
-                      <label>Name <input formControlName="nombre" /></label>
-                      <label>
-                        Complexity
-                        <select formControlName="complejidad">
-                          @for (c of complexities; track c) { <option [value]="c">{{ level(c) }}</option> }
-                        </select>
-                      </label>
-                    </div>
-                    <label>Most likely hours <input type="number" min="0.5" step="0.5" formControlName="horas_probable" /></label>
-                    <div class="row">
-                      <button class="btn primary small" type="submit" [disabled]="busy()">Save</button>
-                      <button class="btn small" type="button" (click)="cancelEdit()">Cancel</button>
-                    </div>
+            <tr>
+              <td class="cell-head">
+                @if (renamingId() === item.id) {
+                  <form class="row" style="flex-wrap: nowrap" [formGroup]="renameForm" (ngSubmit)="saveRename(item)">
+                    <input class="cell-input cell-input--text" formControlName="name" [attr.aria-label]="'Nombre de ' + item.name" />
+                    <button class="btn btn--primary btn--icon btn--sm" type="submit" [disabled]="busy()" aria-label="Guardar nombre"><app-icon name="check" /></button>
+                    <button class="btn btn--ghost btn--icon btn--sm" type="button" (click)="renamingId.set(null)" aria-label="Cancelar"><app-icon name="close" /></button>
                   </form>
-                </td>
-              </tr>
-            } @else {
-              <tr>
-                <td>
-                  <strong>{{ item.nombre }}</strong>
-                  <div class="small subtle">{{ item.categoria }} · <span class="badge" [class]="item.origen">{{ item.origen === 'ia' ? 'AI' : 'Manual' }}</span></div>
-                  <div class="small subtle">{{ item.motivos }}</div>
-                </td>
-                <td><span class="badge" [class]="item.complejidad">{{ level(item.complejidad) }}</span></td>
-                <td class="num">{{ num(item.horas_optimista) }}</td>
-                <td class="num">{{ num(item.horas_probable) }}</td>
-                <td class="num">{{ num(item.horas_pesimista) }}</td>
-                <td class="num"><strong>{{ num(item.horas_esperadas) }}</strong></td>
-                <td>
-                  <div class="chips">
-                    @for (r of roles(item); track r.role) { <span class="chip">{{ r.role }} {{ r.pct }}%</span> }
+                } @else {
+                  <div class="row" style="flex-wrap: nowrap">
+                    <span class="strong">{{ item.name }}</span>
+                    @if (item.source === 'ai') {
+                      <span class="badge badge--ai"><app-icon name="sparkle" size="sm" />IA</span>
+                    } @else {
+                      <span class="badge badge--manual">Manual</span>
+                    }
                   </div>
-                </td>
-                <td>
-                  @if (editable) {
-                    <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
-                      <button class="btn small" type="button" (click)="startEdit(item)">Edit</button>
-                      <button class="btn small danger" type="button" (click)="remove(item)">Remove</button>
-                    </div>
+                }
+                <span class="table__secondary" [title]="item.reasons">
+                  {{ item.category === crossCutting ? 'Transversal · ' : '' }}{{ item.reasons }}
+                </span>
+              </td>
+              <td data-label="Complejidad">
+                @if (editable()) {
+                  <select #cx class="select select--inline" [value]="item.complexity" [disabled]="busy()" [attr.aria-label]="'Complejidad de ' + item.name"
+                    (change)="saveComplexity(item, cx)">
+                    @for (c of complexities; track c) { <option [value]="c" [selected]="c === item.complexity">{{ level(c) }}</option> }
+                  </select>
+                } @else {
+                  <span class="badge" [class]="'badge--' + item.complexity"><span class="cx-bars" aria-hidden="true"><i></i><i></i><i></i></span>{{ level(item.complexity) }}</span>
+                }
+              </td>
+              <td class="num" data-label="Optimista">{{ num(item.hours_optimistic) }}</td>
+              <td class="num" data-label="Más probable">
+                @if (editable()) {
+                  <input #hours class="cell-input" type="number" min="0.5" step="0.5" [value]="item.hours_likely" [disabled]="busy()"
+                    [attr.aria-label]="'Horas más probables de ' + item.name" (change)="saveHours(item, hours)" (keydown.enter)="hours.blur()" />
+                } @else {
+                  {{ num(item.hours_likely) }}
+                }
+              </td>
+              <td class="num" data-label="Pesimista">{{ num(item.hours_pessimistic) }}</td>
+              <td class="num strong" data-label="Esperadas">{{ num(item.hours_expected) }} h</td>
+              <td data-label="Reparto por rol">
+                <div class="chip-list">
+                  @for (r of roles(item); track r.role) {
+                    <span class="chip"><span class="swatch" [class]="'swatch--' + roleColor(r.role)"></span>{{ r.role }} <span class="chip__pct">{{ r.pct }} %</span></span>
                   }
-                </td>
-              </tr>
-            }
+                </div>
+              </td>
+              <td>
+                @if (editable()) {
+                  <div class="table__actions">
+                    <button class="btn btn--ghost btn--icon btn--sm" type="button" (click)="startRename(item)" [disabled]="busy()" [attr.aria-label]="'Renombrar ' + item.name" title="Renombrar"><app-icon name="edit" /></button>
+                    <button class="btn btn--ghost btn--icon btn--sm" type="button" (click)="remove(item)" [disabled]="busy()" [attr.aria-label]="'Quitar ' + item.name" title="Quitar"><app-icon name="trash" /></button>
+                  </div>
+                }
+              </td>
+            </tr>
           }
         </tbody>
+        <tfoot>
+          <tr>
+            <td>{{ quote().items.length }} {{ quote().items.length === 1 ? 'módulo' : 'módulos' }}</td>
+            <td></td>
+            <td class="num">{{ num(totals().optimistic) }} h</td>
+            <td class="num">{{ num(totals().likely) }} h</td>
+            <td class="num">{{ num(totals().pessimistic) }} h</td>
+            <td class="num" style="color: var(--accent-text)">{{ num(totals().expected) }} h</td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
-    <p class="small subtle" style="margin-top: 10px">
-      Expected hours = (optimistic + 4 × most likely + pessimistic) / 6 (three-point PERT estimate).
-      @if (!editable) { The quote is no longer a draft: it cannot be edited. }
-    </p>
+    @if (!editable()) {
+      <div class="card__footer"><span class="hint">La cotización ya no es un borrador: los módulos no se pueden editar.</span></div>
+    }
   }
-</div>
+</section>

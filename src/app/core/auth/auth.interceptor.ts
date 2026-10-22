@@ -7,8 +7,8 @@ import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
 
 /**
- * - Agrega "Authorization: Bearer <token>" a las peticiones del backend (nunca a otros dominios).
- * - Si el backend responde 401 (sesión vencida o inválida), cierra la sesión y lleva al login.
+ * - Adds "Authorization: Bearer <token>" to the backend requests (never to other domains).
+ * - When the backend answers 401 (expired or invalid session), logs out and goes to the login.
  */
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthService);
@@ -23,7 +23,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       const isAuthRoute = request.url.startsWith(`${API_URL}/auth/`) && !request.url.endsWith('/auth/me');
       if (isApi && !isAuthRoute && error instanceof HttpErrorResponse && error.status === 401 && auth.isLoggedIn()) {
         auth.logout();
-        toast.info('Your session expired: log in again');
+        toast.info('Tu sesión venció', 'Inicia sesión de nuevo para continuar.');
       }
       return throwError(() => error);
     }),

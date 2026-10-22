@@ -1,24 +1,41 @@
-<div class="card">
-  <div class="row" style="margin-bottom: 12px">
-    <h2 style="margin: 0">Commercial proposal</h2>
+<div class="doc-toolbar">
+  @if (canGenerate()) {
+    <button class="btn btn--ai" type="button" (click)="generate()" [disabled]="busy()">
+      @if (busy()) { <span class="spinner spinner--ai"></span>Generando… } @else { <app-icon name="sparkles" />{{ quote().proposal ? 'Regenerar propuesta' : 'Generar propuesta' }} }
+    </button>
+  }
+  @if (quote().proposal) {
+    <button class="btn btn--secondary" type="button" (click)="download()"><app-icon name="download" />Descargar .md</button>
+    <button class="btn btn--secondary" type="button" (click)="print()"><app-icon name="print" />Imprimir</button>
     <span class="spacer"></span>
-    @if (canGenerate) {
-      <button class="btn primary small" type="button" (click)="generate()" [disabled]="busy()">
-        {{ busy() ? 'Generating…' : quote().propuesta ? 'Regenerate proposal' : 'Generate proposal' }}
-      </button>
-    }
-    @if (quote().propuesta) {
-      <button class="btn small" type="button" (click)="download()">Download .md</button>
-      <button class="btn small" type="button" (click)="print()">Print</button>
-    }
-  </div>
-
-  @if (quote().propuesta) {
-    <div class="markdown" [innerHTML]="html()"></div>
-  } @else {
-    <div class="empty">
-      There is no proposal yet.
-      @if (canGenerate) { Click <strong>Generate proposal</strong>. } @else { Analyze the quote first. }
-    </div>
+    <span class="xsmall subtle">Actualizada {{ shortDate(quote().updated_at) }} · Markdown</span>
   }
 </div>
+
+@if (quote().proposal) {
+  <div class="doc-sheet">
+    <article class="doc">
+      <header class="doc__masthead">
+        <div class="doc__brand">Propuesta comercial</div>
+        <div class="doc__meta">{{ code(quote().id) }}<br />{{ shortDate(quote().updated_at) }}</div>
+      </header>
+      <div [innerHTML]="html()"></div>
+    </article>
+  </div>
+} @else {
+  <section class="card">
+    <div class="state state--empty">
+      <span class="state__icon"><app-icon name="file" /></span>
+      <h2 class="state__title">Todavía no hay propuesta</h2>
+      <p class="state__text">
+        @if (canGenerate()) {
+          Pulsa «Generar propuesta»: se arma con los módulos, el precio y los pagos de esta cotización.
+        } @else if (quote().items.length === 0) {
+          Analiza la cotización primero.
+        } @else {
+          Vuelve a poner la cotización en borrador para generarla.
+        }
+      </p>
+    </div>
+  </section>
+}

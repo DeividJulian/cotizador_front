@@ -17,10 +17,10 @@ import {
 @Injectable({ providedIn: 'root' })
 export class QuoteService {
   private readonly http = inject(HttpClient);
-  private readonly url = `${API_URL}/cotizaciones`;
+  private readonly url = `${API_URL}/quotes`;
 
   list(status?: QuoteStatus | ''): Observable<QuoteSummary[]> {
-    return this.http.get<QuoteSummary[]>(this.url, { params: status ? { estado: status } : {} });
+    return this.http.get<QuoteSummary[]>(this.url, { params: status ? { status } : {} });
   }
 
   get(id: number): Observable<Quote> {
@@ -39,17 +39,17 @@ export class QuoteService {
     return this.http.delete(`${this.url}/${id}`);
   }
 
-  /** Ejecuta el análisis del alcance: detecta módulos, estima horas (PERT) y calcula el precio. */
+  /** Runs the scope analysis: detects modules, estimates hours (PERT) and calculates the price. */
   analyze(id: number): Observable<Quote> {
-    return this.http.post<Quote>(`${this.url}/${id}/analizar`, {});
+    return this.http.post<Quote>(`${this.url}/${id}/analyze`, {});
   }
 
-  setStatus(id: number, estado: QuoteStatus): Observable<Quote> {
-    return this.http.post<Quote>(`${this.url}/${id}/estado`, { estado });
+  setStatus(id: number, status: QuoteStatus): Observable<Quote> {
+    return this.http.post<Quote>(`${this.url}/${id}/status`, { status });
   }
 
   similar(id: number, limit = 3): Observable<SimilarQuote[]> {
-    return this.http.get<SimilarQuote[]>(`${this.url}/${id}/similares`, { params: { limite: limit } });
+    return this.http.get<SimilarQuote[]>(`${this.url}/${id}/similar`, { params: { limit } });
   }
 
   addItem(id: number, item: ItemInput): Observable<Quote> {
@@ -64,7 +64,7 @@ export class QuoteService {
     return this.http.delete<Quote>(`${this.url}/${id}/items/${itemId}`);
   }
 
-  generateProposal(id: number): Observable<{ cotizacion_id: number; propuesta: string }> {
-    return this.http.post<{ cotizacion_id: number; propuesta: string }>(`${this.url}/${id}/propuesta`, {});
+  generateProposal(id: number): Observable<{ quote_id: number; proposal: string }> {
+    return this.http.post<{ quote_id: number; proposal: string }>(`${this.url}/${id}/proposal`, {});
   }
 }

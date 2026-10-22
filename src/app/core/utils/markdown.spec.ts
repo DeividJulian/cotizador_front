@@ -16,6 +16,12 @@ describe('renderMarkdown', () => {
     expect(html).not.toContain('---');
   });
 
+  it('marca la fila del total para resaltarla', () => {
+    const html = renderMarkdown('| Concepto | Valor |\n|---|---|\n| IVA | $10 |\n| **Total** | **$100** |');
+    expect(html).toContain('<tr class="doc__total"><td><strong>Total</strong></td>');
+    expect(html).toContain('<tr><td>IVA</td>');
+  });
+
   it('escapa el HTML para evitar inyecciones', () => {
     const html = renderMarkdown('<script>alert(1)</script>');
     expect(html).not.toContain('<script>');

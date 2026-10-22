@@ -1,85 +1,219 @@
-<section class="page">
-  <div class="page-head">
-    <div>
-      <p class="eyebrow">Your dashboard</p>
-      <h1>How much should you charge?</h1>
-      <p class="subtle small">Describe a project and the AI estimates hours, price and proposal.</p>
-    </div>
-    <div class="row">
-      <a class="btn primary" routerLink="/cotizaciones/nueva">New quote</a>
-      <button class="btn" type="button" (click)="loadDemo()" [disabled]="loadingDemo()">
-        {{ loadingDemo() ? 'Loading…' : 'Load examples' }}
-      </button>
-    </div>
-  </div>
-
+<main class="page">
   @if (error(); as message) {
-    <div class="notice error row">
-      <span>Could not load the dashboard: {{ message }}</span>
-      <span class="spacer"></span>
-      <button class="btn small" type="button" (click)="load()">Retry</button>
-    </div>
+    <section class="card">
+      <div class="state state--error" role="alert">
+        <span class="state__icon"><app-icon name="warning" /></span>
+        <h2 class="state__title">No pudimos cargar tu panel</h2>
+        <p class="state__text">{{ message }}</p>
+        <div class="state__actions"><button class="btn btn--primary" type="button" (click)="load()"><app-icon name="refresh" />Reintentar</button></div>
+      </div>
+    </section>
   } @else if (loading()) {
-    <div class="grid cols-4">
+    <div class="page-header"><span class="skeleton skeleton--title"></span></div>
+    <section class="grid grid--kpis" aria-busy="true" aria-label="Cargando">
       @for (i of [1, 2, 3, 4]; track i) {
-        <div class="card"><div class="skeleton"></div></div>
+        <div class="card kpi" aria-hidden="true">
+          <span class="skeleton skeleton--text" style="width: 45%"></span>
+          <span class="skeleton skeleton--value"></span>
+          <span class="skeleton skeleton--text" style="width: 70%"></span>
+        </div>
       }
-    </div>
+    </section>
+    <span class="skeleton skeleton--block"></span>
   } @else if (stats(); as s) {
-    <div class="grid cols-4">
-      <div class="card stat"><span class="value">{{ s.total_cotizaciones }}</span><span class="label">Quotes</span></div>
-      <div class="card stat"><span class="value">{{ s.tasa_cierre_pct === null ? "—" : s.tasa_cierre_pct + "%" }}</span><span class="label">Close rate</span></div>
-      <div class="card stat"><span class="value">{{ cop(s.ticket_promedio) }}</span><span class="label">Average ticket</span></div>
-      <div class="card stat"><span class="value">{{ cop(s.valor_aceptado) }}</span><span class="label">Accepted value</span></div>
-    </div>
+    @if (s.total_quotes === 0) {
+      <!-- First visit: welcome and getting started -->
+      <section class="welcome" aria-labelledby="welcome-title">
+        <div class="stack stack--lg">
+          <div>
+            <span class="eyebrow">Hola, {{ firstName() }}</span>
+            <h1 class="welcome__title" id="welcome-title" style="margin-top: 10px">
+              ¿Cuánto deberías cobrar?<br />Descubrámoslo con tu primer proyecto.
+            </h1>
+            <p class="welcome__text">
+              Describe lo que necesita tu cliente. Cotizador IA lo divide en módulos, estima las horas y las convierte
+              en un precio que puedes explicar línea por línea.
+            </p>
+          </div>
+          <div class="btn-group">
+            <a class="btn btn--primary btn--lg" routerLink="/cotizaciones/nueva"><app-icon name="plus" />Nueva cotización</a>
+            <button class="btn btn--secondary btn--lg" type="button" (click)="loadExamples()" [disabled]="loadingExamples()">
+              {{ loadingExamples() ? 'Cargando…' : 'Cargar ejemplos' }}
+            </button>
+          </div>
+          <p class="hint" style="margin-top: -8px">¿Aún no? Carga ejemplos para explorar la app con cotizaciones de muestra.</p>
+          <ol class="checklist" aria-label="Primeros pasos">
+            <li class="checklist__item">
+              <span class="checklist__num">1</span>
+              <div>
+                <div class="checklist__title">Revisa tus tarifas por hora</div>
+                <div class="checklist__text">Todo precio sale de ellas. Las de mercado son un punto de partida.</div>
+              </div>
+              <a class="btn btn--ghost btn--sm" routerLink="/tarifas">Mis tarifas</a>
+            </li>
+            <li class="checklist__item">
+              <span class="checklist__num">2</span>
+              <div>
+                <div class="checklist__title">Describe tu primer proyecto</div>
+                <div class="checklist__text">Mientras más detalle des, mejor la estimación.</div>
+              </div>
+              <a class="btn btn--ghost btn--sm" routerLink="/cotizaciones/nueva">Empezar</a>
+            </li>
+            <li class="checklist__item">
+              <span class="checklist__num">3</span>
+              <div>
+                <div class="checklist__title">Envía la propuesta y haz seguimiento</div>
+                <div class="checklist__text">Márcala como enviada, aceptada o rechazada para ver tu tasa de cierre.</div>
+              </div>
+              <span></span>
+            </li>
+          </ol>
+        </div>
 
-    @if (s.total_cotizaciones === 0) {
-      <div class="empty">
-        You have no quotes yet. Click <strong>New quote</strong> to price your first project, or <strong>Load examples</strong> to see how it works.
-      </div>
+        <aside class="preview-ghost" aria-label="Ejemplo de una cotización terminada">
+          <div class="row row--between">
+            <span class="eyebrow">Lo que obtendrás</span>
+            <span class="badge badge--outline">Ejemplo</span>
+          </div>
+          <div>
+            <div class="small muted">Tienda en línea para una cafetería</div>
+            <div class="tabular" style="font-size: 34px; font-weight: 700; letter-spacing: -0.03em; margin-top: 4px">
+              $ 33.218.866 <span class="subtle" style="font-size: 14px">COP</span>
+            </div>
+            <div class="small subtle" style="margin-top: 2px">254 h esperadas · ≈ 9 semanas</div>
+          </div>
+          <div class="stack stack--sm">
+            <span class="label">7 módulos detectados</span>
+            <div class="chip-list">
+              <span class="chip">Login</span><span class="chip">Catálogo</span><span class="chip">Carrito</span>
+              <span class="chip">Pagos</span><span class="chip">Panel administrativo</span><span class="chip">Reportes</span>
+              <span class="chip">Notificaciones</span>
+            </div>
+          </div>
+          <div class="stack stack--sm">
+            <span class="label">Desglose del precio</span>
+            <div class="stacked-bar" role="img" aria-label="Costo directo 59 %, contingencia 9 %, margen 16 %, IVA 16 %">
+              <span class="stacked-bar__seg" style="width: 59.2%; background: var(--chart-1)"></span>
+              <span class="stacked-bar__seg" style="width: 8.9%; background: var(--chart-4)"></span>
+              <span class="stacked-bar__seg" style="width: 16%; background: var(--chart-3)"></span>
+              <span class="stacked-bar__seg" style="width: 16%; background: var(--chart-2)"></span>
+            </div>
+            <div class="legend">
+              <span class="legend__item"><span class="swatch swatch--1"></span>Costo directo</span>
+              <span class="legend__item"><span class="swatch swatch--4"></span>Contingencia</span>
+              <span class="legend__item"><span class="swatch swatch--3"></span>Margen</span>
+              <span class="legend__item"><span class="swatch swatch--2"></span>IVA</span>
+            </div>
+          </div>
+          <div class="callout callout--neutral">
+            <app-icon name="shield" />
+            <div>Análisis de riesgo: el 80 % de los escenarios simulados termina en 268 h o menos.</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="card card--muted">
+        <div class="state" style="padding: 32px 24px">
+          <span class="state__icon"><app-icon name="chart" /></span>
+          <h2 class="state__title">Aquí verás tus números</h2>
+          <p class="state__text">
+            Cotizaciones, tasa de cierre, ticket promedio, valor aceptado, horas por rol y tus módulos más cotizados
+            aparecen después de tu primera cotización.
+          </p>
+        </div>
+      </section>
     } @else {
-      <div class="grid cols-2">
-        <div class="card">
-          <h2>Quotes by status</h2>
-          <div class="grid">
-            @for (step of byStatus(); track step.status) {
-              <div class="grid" style="gap: 4px">
-                <div class="row small">
-                  <span class="badge" [class]="step.status">{{ step.label }}</span><span class="spacer"></span><strong>{{ step.count }}</strong>
-                </div>
-                <div class="bar"><span [style.width.%]="step.width"></span></div>
-              </div>
-            }
-          </div>
-          <p class="small subtle" style="margin-top: 12px">In negotiation: <strong>{{ cop(s.valor_en_negociacion) }}</strong></p>
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">¿Cuánto deberías cobrar?</h1>
+          <p class="page-subtitle">Tu actividad de cotización de un vistazo.</p>
         </div>
-
-        <div class="card">
-          <h2>Hours quoted by role</h2>
-          <div class="grid">
-            @for (r of hoursByRole(); track r.role) {
-              <div class="grid" style="gap: 4px">
-                <div class="row small"><span>{{ r.role }}</span><span class="spacer"></span><strong>{{ num(r.hours) }} h</strong></div>
-                <div class="bar"><span [style.width.%]="r.width"></span></div>
-              </div>
-            }
-          </div>
+        <div class="page-actions">
+          <button class="btn btn--secondary" type="button" (click)="loadExamples()" [disabled]="loadingExamples()">
+            {{ loadingExamples() ? 'Cargando…' : 'Cargar ejemplos' }}
+          </button>
+          <a class="btn btn--primary" routerLink="/cotizaciones/nueva"><app-icon name="plus" />Nueva cotización</a>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Most quoted modules</h2>
+      <section class="grid grid--kpis" aria-label="Indicadores">
+        <div class="card kpi">
+          <span class="kpi__label"><app-icon name="file" />Cotizaciones</span>
+          <span class="kpi__value">{{ s.total_quotes }}</span>
+          <span class="kpi__meta">{{ waiting() }} esperando la respuesta del cliente</span>
+        </div>
+        <div class="card kpi">
+          <span class="kpi__label"><app-icon name="check" />Tasa de cierre</span>
+          <span class="kpi__value">{{ s.close_rate_pct === null ? '—' : num(s.close_rate_pct) + ' %' }}</span>
+          <span class="kpi__meta">{{ decided().accepted }} aceptadas de {{ decided().total }} decididas</span>
+        </div>
+        <div class="card kpi">
+          <span class="kpi__label"><app-icon name="trend" />Ticket promedio</span>
+          <span class="kpi__value">{{ cop(s.average_ticket) }}</span>
+          <span class="kpi__meta">COP · todas las cotizaciones</span>
+        </div>
+        <div class="card kpi">
+          <span class="kpi__label"><app-icon name="money" />Valor aceptado</span>
+          <span class="kpi__value" style="color: var(--accent-text)">{{ cop(s.accepted_value) }}</span>
+          <span class="kpi__meta">COP · en negociación {{ cop(s.negotiating_value) }}</span>
+        </div>
+      </section>
+
+      <section class="grid grid--2">
+        <div class="card">
+          <div class="card__header"><div><h2 class="card__title">Cotizaciones por estado</h2><p class="card__subtitle">{{ s.total_quotes }} cotizaciones</p></div></div>
+          <div class="card__body">
+            <div class="bar-list">
+              @for (step of byStatus(); track step.status) {
+                <div class="bar-row">
+                  <span class="bar-row__label"><span class="badge badge--dot" [class]="'badge--' + step.status">{{ step.label }}</span></span>
+                  <div class="bar-track"><div class="bar-fill" [class]="'bar-fill--' + step.status" [style.width.%]="step.width"></div></div>
+                  <span class="bar-row__value">{{ step.count }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__header"><div><h2 class="card__title">Horas cotizadas por rol</h2><p class="card__subtitle">{{ num(totalHours()) }} h en todas las cotizaciones</p></div></div>
+          <div class="card__body">
+            <div class="bar-list">
+              @for (r of hoursByRole(); track r.role) {
+                <div class="bar-row">
+                  <span class="bar-row__label"><span class="swatch" [class]="'swatch--' + roleColor(r.role)"></span>{{ r.role }}</span>
+                  <div class="bar-track"><div class="bar-fill" [class]="'bar-fill--' + roleColor(r.role)" [style.width.%]="r.width"></div></div>
+                  <span class="bar-row__value">{{ num(r.hours) }} h</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__header">
+          <div><h2 class="card__title">Módulos más cotizados</h2><p class="card__subtitle">Lo que más te piden tus clientes.</p></div>
+        </div>
         <div class="table-wrap">
-          <table>
-            <thead><tr><th>Module</th><th class="num">Times</th></tr></thead>
+          <table class="table table--stack">
+            <thead><tr><th scope="col">Módulo</th><th scope="col" class="num">Cotizaciones</th><th scope="col">Aparece en</th></tr></thead>
             <tbody>
-              @for (m of s.modulos_mas_cotizados; track m.modulo) {
-                <tr><td>{{ m.modulo }}</td><td class="num">{{ m.veces }}</td></tr>
+              @for (m of s.top_modules; track m.module) {
+                <tr>
+                  <td class="cell-head"><span class="strong">{{ m.module }}</span></td>
+                  <td class="num" data-label="Cotizaciones">{{ m.count }}</td>
+                  <td data-label="Aparece en">
+                    <span class="meter">
+                      <span class="meter__track"><span class="meter__fill" style="display: block" [style.width.%]="appearsIn(m.count)"></span></span>
+                      <span class="meter__value">{{ appearsIn(m.count) }} %</span>
+                    </span>
+                  </td>
+                </tr>
               }
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     }
   }
-</section>
+</main>

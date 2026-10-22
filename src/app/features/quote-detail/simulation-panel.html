@@ -1,94 +1,149 @@
-<div class="card">
-  <div class="row" style="margin-bottom: 8px">
+<section class="card" aria-labelledby="simc-title">
+  <div class="card__header">
     <div>
-      <p class="eyebrow" style="margin: 0">Web Worker · Monte Carlo simulation</p>
-      <h2 style="margin: 0">How certain is this price?</h2>
+      <h2 class="card__title" id="simc-title">Corre la simulación</h2>
+      <p class="card__subtitle">Cada escenario sortea las horas de cada módulo entre su optimista y su pesimista, y las suma.</p>
     </div>
-    <span class="spacer"></span>
-    <div class="chip" [class.good]="fps() >= 40" [class.bad]="fps() < 20">UI: <strong>{{ fps() }} FPS</strong></div>
+    <span class="fps" [class.fps--good]="fps() >= 40" [class.fps--bad]="fps() < 20" aria-live="polite" title="Fotogramas por segundo de la pantalla">
+      <span class="fps__dot"></span><span class="fps__value">{{ fps() }}</span>FPS
+    </span>
   </div>
-
-  <p class="small subtle">
-    The quote uses the PERT average, but each module can turn out better or worse. Here thousands of
-    "possible projects" are drawn to measure how many hours and how much money cover 50%, 80% and 90% of the cases.
-  </p>
-
-  @if (!canRun()) {
-    <div class="empty" style="margin-top: 12px">Analyze the quote to be able to simulate it.</div>
-  } @else {
-    <div class="row" style="margin: 14px 0">
-      <label style="min-width: 190px">
-        Simulations
-        <select [ngModel]="runs()" (ngModelChange)="runs.set(+$event)">
-          <option [ngValue]="10000">10,000</option>
-          <option [ngValue]="100000">100,000</option>
-          <option [ngValue]="500000">500,000</option>
-          <option [ngValue]="2000000">2,000,000</option>
-        </select>
-      </label>
-      <button class="btn primary" type="button" (click)="run('worker')" [disabled]="simulation.running() || !simulation.workerSupported">
-        Simulate with Web Worker
-      </button>
-      <button class="btn" type="button" (click)="run('main')" [disabled]="simulation.running()">
-        Simulate on the main thread (compare)
-      </button>
-      @if (simulation.running() && simulation.mode() === 'worker') {
-        <button class="btn danger" type="button" (click)="cancel()">Cancel</button>
-      }
-      @if (simulation.running()) {
-        <span class="row small"><span class="spinner"></span>
-          {{ simulation.mode() === 'worker' ? 'Processing in the worker…' : 'Processing on the main thread (the screen will freeze)…' }}
-        </span>
-      }
-    </div>
-
-    @if (simulation.running()) {
-      <div class="bar"><span [style.width.%]="percent()"></span></div>
-    }
-  }
-
-  @if (lastRun(); as r) {
-    <div class="grid cols-4" style="margin-top: 14px">
-      <div class="stat"><span class="value">{{ num(r.output.p50) }} h</span><span class="label">Median (P50) · {{ cop(r.output.priceP50) }}</span></div>
-      <div class="stat"><span class="value">{{ num(r.output.p80) }} h</span><span class="label">P80 recommended · {{ cop(r.output.priceP80) }}</span></div>
-      <div class="stat"><span class="value">{{ num(r.output.p90) }} h</span><span class="label">P90 conservative · {{ cop(r.output.priceP90) }}</span></div>
-      <div class="stat">
-        <span class="value" [style.color]="r.output.probOverPlan > 0.5 ? 'var(--bad)' : 'var(--good)'">{{ (r.output.probOverPlan * 100).toFixed(0) }}%</span>
-        <span class="label">Probability of exceeding the quoted hours</span>
-      </div>
-    </div>
-
-    <div style="margin-top: 16px">
-      <div class="histogram">
-        @for (b of r.output.histogram; track $index) {
-          <span [class.over]="b.overPlan" [style.height.%]="(b.count / maxBin()) * 100" [title]="num(b.from) + ' – ' + num(b.to) + ' h'"></span>
+  <div class="card__body stack">
+    @if (!canRun()) {
+      <p class="small subtle">Analiza la cotización para poder simularla.</p>
+    } @else {
+      <div class="sim-controls">
+        <div class="field">
+          <label class="label" for="sims">Simulaciones</label>
+          <select class="select tabular" id="sims" [ngModel]="runs()" (ngModelChange)="runs.set(+$event)" [disabled]="simulation.running()">
+            @for (n of options; track n) { <option [ngValue]="n">{{ int(n) }}</option> }
+          </select>
+        </div>
+        <button class="btn btn--primary" type="button" style="min-height: 42px" (click)="run('worker')" [disabled]="simulation.running() || !simulation.workerSupported">
+          <app-icon name="chip" />Simular con Web Worker
+        </button>
+        <button class="btn btn--secondary" type="button" style="min-height: 42px" (click)="run('main')" [disabled]="simulation.running()">
+          Simular en el hilo principal (comparar)
+        </button>
+        @if (simulation.running() && simulation.mode() === 'worker') {
+          <button class="btn btn--danger-ghost" type="button" style="min-height: 42px" (click)="cancel()"><app-icon name="close" />Cancelar</button>
         }
       </div>
-      <p class="small subtle" style="margin-top: 6px">
-        Distribution of total hours ({{ num(r.output.runs) }} simulations). In red, the scenarios that exceed the quoted hours.
-        Observed range: {{ num(r.output.histogram[0].from) }} – {{ num(r.output.histogram[r.output.histogram.length - 1].to) }} h.
-      </p>
-    </div>
-  }
+      @if (simulation.running() || lastRun()) {
+        <div>
+          <div class="progress-label">
+            <span>{{ simulation.mode() === 'worker' ? 'Web Worker' : 'Hilo principal' }} · {{ simulation.running() ? 'procesando…' : 'listo' }}</span>
+            <span>
+              @if (simulation.running()) { {{ percent() }} % } @else if (lastRun(); as r) { {{ int(r.output.runs) }} / {{ int(r.output.runs) }} · {{ num(r.wallMs / 1000) }} s }
+            </span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="simulation.running() ? percent() : 100" aria-label="Progreso de la simulación">
+            <div class="progress__bar" [style.width.%]="simulation.running() ? percent() : 100"></div>
+          </div>
+        </div>
+      }
+      <p class="hint">Prueba a desplazarte mientras corre cada una: con el Worker la página sigue fluida; en el hilo principal se congela.</p>
+    }
+  </div>
+</section>
 
-  @if (log().length) {
-    <div class="table-wrap" style="margin-top: 16px">
-      <table>
-        <thead>
-          <tr><th>Mode</th><th class="num">Simulations</th><th class="num">Compute time</th><th class="num">Longest screen freeze</th></tr>
-        </thead>
-        <tbody>
-          @for (entry of log(); track $index) {
-            <tr>
-              <td>{{ entry.mode === 'worker' ? 'Web Worker' : 'Main thread' }}</td>
-              <td class="num">{{ num(entry.runs) }}</td>
-              <td class="num">{{ entry.elapsedMs }} ms</td>
-              <td class="num" [style.color]="entry.longestFreezeMs > 200 ? 'var(--bad)' : 'var(--good)'">{{ entry.longestFreezeMs }} ms</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      <p class="small subtle" style="margin-top: 8px">A freeze longer than 200 ms already feels like a stuck interface.</p>
+@if (lastRun(); as r) {
+  <section class="card" aria-labelledby="res-title">
+    <div class="card__header">
+      <div><h2 class="card__title" id="res-title">Resultados · {{ int(r.output.runs) }} escenarios</h2><p class="card__subtitle">Cuántas horas, y a qué precio, cubren cada parte de los escenarios.</p></div>
     </div>
-  }
-</div>
+    <div class="card__body stack">
+      <div class="pct-grid">
+        <div class="pct"><div class="pct__head"><span class="pct__label">P50</span></div><span class="pct__caption">Cubre el 50 % de los escenarios</span><span class="pct__hours">{{ num(r.output.p50) }} h</span><span class="pct__price">{{ cop(r.output.priceP50) }}</span></div>
+        <div class="pct pct--recommended"><div class="pct__head"><span class="pct__label">P80</span><span class="badge badge--recommended">Cotización más segura</span></div><span class="pct__caption">Cubre el 80 % de los escenarios</span><span class="pct__hours">{{ num(r.output.p80) }} h</span><span class="pct__price">{{ cop(r.output.priceP80) }}</span></div>
+        <div class="pct"><div class="pct__head"><span class="pct__label">P90</span></div><span class="pct__caption">Cubre el 90 % de los escenarios</span><span class="pct__hours">{{ num(r.output.p90) }} h</span><span class="pct__price">{{ cop(r.output.priceP90) }}</span></div>
+      </div>
+      <div class="callout" [class.callout--warning]="r.output.probOverPlan > 0.2" [class.callout--neutral]="r.output.probOverPlan <= 0.2">
+        <app-icon name="warning" />
+        <div>
+          <div class="callout__title">{{ (r.output.probOverPlan * 100).toFixed(0) }} % de probabilidad de pasarte de las {{ num(planned()) }} h que cotizaste</div>
+          Cotizar en P80 ({{ num(r.output.p80) }} h) cubriría 8 de cada 10 escenarios.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr)">
+    @if (chart(); as c) {
+      <section class="card" aria-labelledby="hist-title">
+        <div class="card__header">
+          <div><h2 class="card__title" id="hist-title">Distribución de las horas totales</h2></div>
+          <div class="legend">
+            <span class="legend__item"><span class="swatch swatch--1"></span>Dentro de lo cotizado</span>
+            <span class="legend__item"><span class="swatch swatch--danger"></span>Por encima</span>
+          </div>
+        </div>
+        <div class="card__body">
+          <div class="histogram" role="img"
+            [attr.aria-label]="'Histograma de horas totales de ' + c.axis[0] + ' a ' + c.axis[4] + '. El ' + (r.output.probOverPlan * 100).toFixed(0) + ' % de los escenarios supera las ' + num(planned()) + ' h cotizadas.'">
+            @for (b of c.bars; track $index) {
+              <span class="histogram__bar" [class.histogram__bar--over]="b.overPlan" [style.height.%]="b.height" [title]="num(b.from) + ' – ' + num(b.to) + ' h · ' + int(b.count)"></span>
+            }
+            <span class="histogram__marker" [style.left.%]="c.marker"><span class="histogram__marker-label">Cotizado · {{ num(planned()) }} h</span></span>
+          </div>
+          <div class="histogram__axis">
+            @for (a of c.axis; track $index) { <span>{{ a }}</span> }
+          </div>
+        </div>
+      </section>
+    }
+
+    <section class="card" aria-labelledby="cmp-title">
+      <div class="card__header"><div><h2 class="card__title" id="cmp-title">Worker vs hilo principal</h2><p class="card__subtitle">Corre los dos modos para compararlos.</p></div></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Medida</th><th scope="col" class="num">Web Worker</th><th scope="col" class="num">Hilo principal</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Simulaciones</td>
+              <td class="num">{{ results().worker ? int(results().worker!.output.runs) : '—' }}</td>
+              <td class="num">{{ results().main ? int(results().main!.output.runs) : '—' }}</td>
+            </tr>
+            <tr>
+              <td>Duración</td>
+              <td class="num strong">{{ results().worker ? num(results().worker!.wallMs / 1000) + ' s' : '—' }}</td>
+              <td class="num strong">{{ results().main ? num(results().main!.wallMs / 1000) + ' s' : '—' }}</td>
+            </tr>
+            <tr>
+              <td>FPS promedio</td>
+              <td class="num strong" [class.text-success]="(results().worker?.averageFps ?? 0) >= 40" [class.text-danger]="!!results().worker && results().worker!.averageFps < 20">{{ results().worker?.averageFps ?? '—' }}</td>
+              <td class="num strong" [class.text-success]="(results().main?.averageFps ?? 0) >= 40" [class.text-danger]="!!results().main && results().main!.averageFps < 20">{{ results().main?.averageFps ?? '—' }}</td>
+            </tr>
+            <tr>
+              <td>FPS más bajo</td>
+              <td class="num strong" [class.text-success]="(results().worker?.lowestFps ?? 0) >= 40" [class.text-danger]="!!results().worker && results().worker!.lowestFps < 20">{{ results().worker?.lowestFps ?? '—' }}</td>
+              <td class="num strong" [class.text-success]="(results().main?.lowestFps ?? 0) >= 40" [class.text-danger]="!!results().main && results().main!.lowestFps < 20">{{ results().main?.lowestFps ?? '—' }}</td>
+            </tr>
+            <tr>
+              <td>Página fluida</td>
+              @for (mode of modes; track mode) {
+                <td class="num">
+                  @if (results()[mode]; as m) {
+                    @if (m.longestFreezeMs <= 200) {
+                      <span class="badge badge--accepted">Sí</span>
+                    } @else {
+                      <span class="badge badge--rejected">Se congeló {{ num(m.longestFreezeMs / 1000) }} s</span>
+                    }
+                  } @else { — }
+                </td>
+              }
+            </tr>
+            <tr>
+              <td>Resultado P80</td>
+              <td class="num">{{ results().worker ? num(results().worker!.output.p80) + ' h' : '—' }}</td>
+              <td class="num">{{ results().main ? num(results().main!.output.p80) + ' h' : '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card__body" style="padding-top: 12px">
+        <p class="hint">El hilo principal puede ser un poco más rápido, pero bloquea la pantalla. El Worker cambia unos milisegundos por una página que nunca se congela.</p>
+      </div>
+    </section>
+  </div>
+}

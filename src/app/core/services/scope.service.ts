@@ -3,14 +3,19 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_URL } from '../config/api.config';
-import { ScopeEstimate } from '../models';
+import { Financials, ScopeEstimate, SimulationInput } from '../models';
 
-/** Vista previa del análisis de alcance: no guarda nada en la base de datos. */
+/** Previews that save nothing: scope analysis and the price of some hours. */
 @Injectable({ providedIn: 'root' })
 export class ScopeService {
   private readonly http = inject(HttpClient);
 
-  estimate(descripcion_alcance: string): Observable<ScopeEstimate> {
-    return this.http.post<ScopeEstimate>(`${API_URL}/alcance/estimar`, { descripcion_alcance });
+  estimate(scope_description: string): Observable<ScopeEstimate> {
+    return this.http.post<ScopeEstimate>(`${API_URL}/scope/estimate`, { scope_description });
+  }
+
+  /** Price of the given hours by role with the user's rates and these parameters. */
+  simulatePrice(input: SimulationInput): Observable<Financials> {
+    return this.http.post<Financials>(`${API_URL}/finance/simulate`, input);
   }
 }

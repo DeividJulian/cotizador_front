@@ -10,11 +10,11 @@ export class StatsService {
   private readonly http = inject(HttpClient);
 
   get(): Observable<Stats> {
-    return this.http.get<Stats>(`${API_URL}/estadisticas`);
+    return this.http.get<Stats>(`${API_URL}/stats`);
   }
 
-  /** Carga los datos de demostración. Con reiniciar=true borra lo que haya. */
-  loadDemo(reset: boolean): Observable<unknown> {
-    return this.http.post(`${API_URL}/seed`, {}, { params: { reiniciar: reset } });
+  /** Loads the example quotes. With reset=true it first deletes all your quotes. */
+  loadExamples(reset: boolean): Observable<unknown> {
+    return this.http.post(`${API_URL}/seed`, {}, { params: { reset } });
   }
 }

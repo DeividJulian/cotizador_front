@@ -1,9 +1,9 @@
 import { SimulationJob, mulberry32, samplePert, simulate } from './simulation.logic';
 
 const ITEMS = [
-  { optimista: 48, probable: 64, pesimista: 121.6 },
-  { optimista: 54, probable: 72, pesimista: 136.8 },
-  { optimista: 30, probable: 40, pesimista: 76 },
+  { optimistic: 48, likely: 64, pessimistic: 121.6 },
+  { optimistic: 54, likely: 72, pessimistic: 136.8 },
+  { optimistic: 30, likely: 40, pessimistic: 76 },
 ];
 
 describe('simulación Monte Carlo PERT', () => {
@@ -34,7 +34,7 @@ describe('simulación Monte Carlo PERT', () => {
   });
 
   it('el promedio simulado se acerca al promedio PERT', () => {
-    const pert = ITEMS.reduce((n, i) => n + (i.optimista + 4 * i.probable + i.pesimista) / 6, 0);
+    const pert = ITEMS.reduce((n, i) => n + (i.optimistic + 4 * i.likely + i.pessimistic) / 6, 0);
     const out = simulate({ items: ITEMS, runs: 20000, plannedHours: pert, pricePerHour: 1 });
     expect(Math.abs(out.mean - pert) / pert).toBeLessThan(0.03);
   });
