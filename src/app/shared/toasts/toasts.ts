@@ -1,26 +1,33 @@
 import { Component, inject } from '@angular/core';
 
-import { ToastService } from '../../core/services/toast.service';
+import { ToastKind, ToastService } from '../../core/services/toast.service';
+import { Icon, IconName } from '../icon/icon';
+
+const ICON_BY_KIND: Record<ToastKind, IconName> = { success: 'check', error: 'warning', warning: 'info', ai: 'sparkle' };
 
 @Component({
   selector: 'app-toasts',
+  imports: [Icon],
   template: `
-    <div class="stack" aria-live="polite">
+    <div class="toast-region" aria-live="polite">
       @for (toast of toasts.toasts(); track toast.id) {
-        <button type="button" class="toast" [class]="toast.kind" (click)="toasts.dismiss(toast.id)">
-          {{ toast.text }}
-        </button>
+        <div class="toast" [class]="'toast--' + toast.kind" [attr.role]="toast.kind === 'error' ? 'alert' : 'status'">
+          <span class="toast__icon"><app-icon [name]="icons[toast.kind]" /></span>
+          <div class="toast__body">
+            <div class="toast__title">{{ toast.title }}</div>
+            @if (toast.text) {
+              <div class="toast__msg">{{ toast.text }}</div>
+            }
+          </div>
+          <button class="toast__close" type="button" aria-label="Cerrar" (click)="toasts.dismiss(toast.id)">
+            <app-icon name="close" size="sm" />
+          </button>
+        </div>
       }
     </div>
-  `,
-  styles: `
-    .stack { position: fixed; top: 76px; right: 16px; display: grid; gap: 8px; z-index: 60; max-width: min(380px, calc(100vw - 32px)); }
-    .toast { text-align: left; font: inherit; color: var(--text); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-    .toast.ok { border-color: rgba(52, 211, 153, 0.6); }
-    .toast.error { border-color: rgba(248, 113, 113, 0.7); }
-    .toast.info { border-color: rgba(96, 165, 250, 0.6); }
   `,
 })
 export class Toasts {
   protected readonly toasts = inject(ToastService);
+  protected readonly icons = ICON_BY_KIND;
 }
