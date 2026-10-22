@@ -21,6 +21,9 @@ import { cop, num, shortDate } from '../../core/utils/format';
 import { errorMessage } from '../../core/utils/http-error';
 import { TabSyncService } from '../../core/workers/tab-sync.service';
 import { Icon } from '../../shared/icon/icon';
+import { AiPrice } from './ai-price';
+import { AiQuestions } from './ai-questions';
+import { AiScopeReview } from './ai-scope-review';
 import { QuoteFinance } from './quote-finance';
 import { QuoteItems } from './quote-items';
 import { QuoteProposal } from './quote-proposal';
@@ -42,7 +45,10 @@ const STATUS_DONE: Record<QuoteStatus, string> = {
 
 @Component({
   selector: 'app-quote-detail',
-  imports: [ReactiveFormsModule, RouterLink, Icon, QuoteItems, QuoteFinance, QuoteProposal, SimulationPanel],
+  imports: [
+    ReactiveFormsModule, RouterLink, Icon, QuoteItems, QuoteFinance, QuoteProposal, SimulationPanel,
+    AiScopeReview, AiPrice, AiQuestions,
+  ],
   templateUrl: './quote-detail.html',
 })
 export class QuoteDetail {

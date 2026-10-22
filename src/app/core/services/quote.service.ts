@@ -64,6 +64,11 @@ export class QuoteService {
     return this.http.delete<Quote>(`${this.url}/${id}/items/${itemId}`);
   }
 
+  /** Replaces the text of some proposal sections; the server rejects any change of figures. */
+  updateProposalSections(id: number, sections: { heading: string; text: string }[]): Observable<{ quote_id: number; proposal: string }> {
+    return this.http.patch<{ quote_id: number; proposal: string }>(`${this.url}/${id}/proposal`, { sections });
+  }
+
   generateProposal(id: number): Observable<{ quote_id: number; proposal: string }> {
     return this.http.post<{ quote_id: number; proposal: string }>(`${this.url}/${id}/proposal`, {});
   }

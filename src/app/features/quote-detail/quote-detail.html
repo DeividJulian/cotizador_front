@@ -131,6 +131,7 @@
     @switch (tab()) {
       @case ('modules') {
         <app-quote-items [quote]="q" (changed)="apply($event)" />
+        <app-ai-scope-review [quote]="q" (changed)="apply($event)" />
 
         <section class="card" aria-labelledby="sim-title">
           <div class="card__header">
@@ -159,8 +160,10 @@
       }
       @case ('finance') {
         <app-quote-finance [quote]="q" />
+        <app-ai-price [quote]="q" />
       }
       @case ('risk') {
+        <app-ai-questions [quote]="q" />
         <app-simulation-panel [quote]="q" />
       }
       @case ('proposal') {

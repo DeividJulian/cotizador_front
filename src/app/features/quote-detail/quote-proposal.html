@@ -13,6 +13,48 @@
 </div>
 
 @if (quote().proposal) {
+  <div class="no-print">
+    <app-ai-panel
+      title="Mejorar la redacción"
+      subtitle="La IA reescribe el resumen, el alcance y los supuestos para que suenen más profesionales. Las cifras, fechas e hitos no cambian."
+      action="Sugerir redacción"
+      [busy]="improving()"
+      [error]="wordingError()"
+      [disabledReason]="wordingBlocked()"
+      (run)="improve()">
+      @if (wording(); as w) {
+        <div class="card__body stack">
+          @if (w.discarded.length) {
+            <div class="callout callout--warning">
+              <app-icon name="shield" />
+              <div>Se descartó la sugerencia para {{ w.discarded.join(', ') }} porque cambiaba alguna cifra.</div>
+            </div>
+          }
+          @if (w.sections.length === 0) {
+            <p class="small">No hay cambios por revisar.</p>
+          } @else {
+            @for (s of w.sections; track s.heading) {
+              <div class="stack stack--sm">
+                <p class="label">{{ s.heading }}</p>
+                <div class="compare">
+                  <div class="compare__col"><span class="xsmall subtle">Ahora</span><p class="compare__text">{{ s.original }}</p></div>
+                  <div class="compare__col compare__col--new"><span class="xsmall" style="color: var(--ai-text)">Sugerido por la IA</span><p class="compare__text">{{ s.improved }}</p></div>
+                </div>
+                <div class="btn-group">
+                  <button class="btn btn--primary btn--sm" type="button" (click)="apply([s])" [disabled]="applying()"><app-icon name="check" />Aplicar</button>
+                  <button class="btn btn--ghost btn--sm" type="button" (click)="dismiss([s])" [disabled]="applying()">Descartar</button>
+                </div>
+              </div>
+            }
+            @if (w.sections.length > 1) {
+              <div class="btn-group"><button class="btn btn--secondary btn--sm" type="button" (click)="apply(w.sections)" [disabled]="applying()">Aplicar todo</button></div>
+            }
+          }
+        </div>
+      }
+    </app-ai-panel>
+  </div>
+
   <div class="doc-sheet">
     <article class="doc">
       <header class="doc__masthead">
