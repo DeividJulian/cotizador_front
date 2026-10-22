@@ -30,6 +30,20 @@ No hay roles: cada persona solo ve sus propias cotizaciones, tarifas y panel.
 | `/cotizaciones/:id` | Detalle con pestañas Módulos, Finanzas, Riesgo (Monte Carlo) y Propuesta |
 | `/tarifas` | Mis tarifas por rol, comparadas con el mercado |
 
+## ¿Qué hace la IA?
+Las cifras (módulos, horas, precio y pagos) las calcula el backend con código propio. La IA (**Groq**, opcional) solo
+escribe texto en cuatro paneles del detalle de una cotización:
+
+| Pestaña | Panel | Qué hace |
+| --- | --- | --- |
+| Módulos | Segunda opinión del alcance | Sugiere módulos del catálogo que pudieron faltar; botón **Agregar** para sumarlos como módulo manual |
+| Finanzas | Explícame el precio | Explica de dónde sale el precio y cómo podría bajar |
+| Riesgo | Preguntas y riesgos para el cliente | Qué aclarar en la reunión antes de enviar la cotización |
+| Propuesta | Mejorar la redacción | Antes/después por sección; solo se guarda lo que apliques y las cifras no cambian |
+
+Cada panel muestra el proveedor que informa el servidor (`GET /ai/status`). Si el servidor no tiene `AI_API_KEY`, los
+botones quedan deshabilitados con un aviso y el resto de la app funciona igual.
+
 ## Ingreso con código por correo
 En **Crear cuenta** o **Iniciar sesión** la persona escribe su correo y recibe un código de 6 dígitos que vence en 10 minutos.
 Al verificarlo, el token de la sesión se guarda en el navegador y se envía en cada petición a la API. Si la sesión
@@ -73,7 +87,7 @@ que se guarden en caché `sw.js` y `shared-worker.js`.
 src/app/
   core/       configuración, modelos, servicios HTTP, utilidades y workers
   core/auth/  interceptor del token y guards de sesión
-  shared/     íconos, notificaciones y estado de la conexión
+  shared/     íconos, panel de IA, notificaciones y estado de la conexión
   features/   auth, dashboard, quotes, quote-new, quote-detail, rates
 public/       sw.js y shared-worker.js
 src/styles.css  sistema de diseño (tokens, tema oscuro/claro y componentes)
