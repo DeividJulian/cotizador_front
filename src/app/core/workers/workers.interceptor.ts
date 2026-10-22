@@ -6,11 +6,11 @@ import { API_URL } from '../config/api.config';
 import { ConnectionService } from './connection.service';
 import { TabSyncService } from './tab-sync.service';
 
-const CHANGES_DATA = /\/(cotizaciones|clientes|tarifas|seed)/;
+const CHANGES_DATA = /\/(quotes|rates|seed)/;
 
 /**
- * - Si una petición modifica datos (POST/PUT/PATCH/DELETE), avisa a las otras pestañas por el Shared Worker.
- * - Si el Service Worker respondió con datos guardados, lo informa a la interfaz.
+ * - When a request changes data (POST/PUT/PATCH/DELETE), tells the other tabs through the Shared Worker.
+ * - When the Service Worker answered with saved data, tells the interface.
  */
 export const workersInterceptor: HttpInterceptorFn = (request, next) => {
   const sync = inject(TabSyncService);
@@ -27,7 +27,7 @@ export const workersInterceptor: HttpInterceptorFn = (request, next) => {
         sync.notifyChange(`${request.method} ${request.url.replace(API_URL, '')}`);
       }
       if (request.method === 'GET') {
-        connection.markDataFromCache(event.headers.get('X-Desde-Cache') === '1');
+        connection.markDataFromCache(event.headers.get('X-From-Cache') === '1');
       }
     }),
   );

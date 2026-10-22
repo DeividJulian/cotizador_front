@@ -1,89 +1,87 @@
-// SERVICE WORKER: permite abrir la app y consultar los últimos datos guardados sin conexión.
+// SERVICE WORKER: lets the app open and show the last saved data without a connection.
 
-const VERSION = 'v1';
-const CACHE_APP = `cot-app-${VERSION}`;
-const CACHE_API = `cot-api-${VERSION}`;
+const VERSION = 'v3';
+const APP_CACHE = `cot-app-${VERSION}`;
+const API_CACHE = `cot-api-${VERSION}`;
 
-// Rutas del backend que se pueden consultar sin conexión (solo lecturas GET)
-const RUTAS_API = ['/cotizaciones', '/clientes', '/tarifas', '/estadisticas'];
+// Backend paths that can be read offline (GET only)
+const API_PATHS = ['/quotes', '/rates', '/stats'];
 
-self.addEventListener('install', (evento) => {
-  evento.waitUntil(
+self.addEventListener('install', (event) => {
+  event.waitUntil(
     caches
-      .open(CACHE_APP)
+      .open(APP_CACHE)
       .then((cache) => cache.addAll(['/', '/index.html']))
       .then(() => self.skipWaiting()),
   );
 });
 
-self.addEventListener('activate', (evento) => {
-  evento.waitUntil(
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
     caches
       .keys()
-      .then((nombres) =>
-        Promise.all(nombres.filter((n) => n !== CACHE_APP && n !== CACHE_API).map((n) => caches.delete(n))),
-      )
+      .then((names) => Promise.all(names.filter((n) => n !== APP_CACHE && n !== API_CACHE).map((n) => caches.delete(n))))
       .then(() => self.clients.claim()),
   );
 });
 
-self.addEventListener('fetch', (evento) => {
-  const peticion = evento.request;
-  if (peticion.method !== 'GET') return; // las escrituras siempre van directo a la red
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return; // writes always go straight to the network
 
-  const url = new URL(peticion.url);
-  const mismoOrigen = url.origin === self.location.origin;
+  const url = new URL(request.url);
+  const sameOrigin = url.origin === self.location.origin;
 
-  if (mismoOrigen) {
-    evento.respondWith(peticion.mode === 'navigate' ? paginaConRed(peticion) : archivoEstatico(peticion));
-  } else if (RUTAS_API.some((ruta) => url.pathname === ruta || url.pathname.startsWith(ruta + '/'))) {
-    evento.respondWith(apiConRed(peticion));
+  if (sameOrigin) {
+    event.respondWith(request.mode === 'navigate' ? networkFirstPage(request) : staticFile(request));
+  } else if (API_PATHS.some((path) => url.pathname === path || url.pathname.startsWith(path + '/'))) {
+    event.respondWith(networkFirstApi(request));
   }
 });
 
-// Páginas: primero la red (para recibir versiones nuevas) y, si falla, la copia guardada
-async function paginaConRed(peticion) {
+// Pages: network first (to get new versions) and the saved copy if it fails
+async function networkFirstPage(request) {
   try {
-    const respuesta = await fetch(peticion);
-    const cache = await caches.open(CACHE_APP);
-    cache.put('/index.html', respuesta.clone());
-    return respuesta;
+    const response = await fetch(request);
+    const cache = await caches.open(APP_CACHE);
+    cache.put('/index.html', response.clone());
+    return response;
   } catch {
-    return (await caches.match('/index.html')) || (await caches.match('/')) || respuestaSinConexion();
+    return (await caches.match('/index.html')) || (await caches.match('/')) || offlineResponse();
   }
 }
 
-// Archivos de la app (JS, CSS, imágenes): se sirven de la copia y se actualizan en segundo plano
-async function archivoEstatico(peticion) {
-  const cache = await caches.open(CACHE_APP);
-  const guardada = await cache.match(peticion);
-  const desdeRed = fetch(peticion)
-    .then((respuesta) => {
-      if (respuesta.ok) cache.put(peticion, respuesta.clone());
-      return respuesta;
+// App files (JS, CSS, images): served from the copy and refreshed in the background
+async function staticFile(request) {
+  const cache = await caches.open(APP_CACHE);
+  const saved = await cache.match(request);
+  const fromNetwork = fetch(request)
+    .then((response) => {
+      if (response.ok) cache.put(request, response.clone());
+      return response;
     })
     .catch(() => null);
-  return guardada || (await desdeRed) || respuestaSinConexion();
+  return saved || (await fromNetwork) || offlineResponse();
 }
 
-// Datos del backend: primero la red; sin conexión, la última respuesta guardada marcada con X-Desde-Cache
-async function apiConRed(peticion) {
-  const cache = await caches.open(CACHE_API);
+// Backend data: network first; offline, the last saved response marked with X-From-Cache
+async function networkFirstApi(request) {
+  const cache = await caches.open(API_CACHE);
   try {
-    const respuesta = await fetch(peticion);
-    if (respuesta.ok) cache.put(peticion, respuesta.clone());
-    return respuesta;
+    const response = await fetch(request);
+    if (response.ok) cache.put(request, response.clone());
+    return response;
   } catch {
-    const guardada = await cache.match(peticion);
-    if (!guardada) return respuestaSinConexion();
-    const cabeceras = new Headers(guardada.headers);
-    cabeceras.set('X-Desde-Cache', '1');
-    return new Response(guardada.body, { status: guardada.status, statusText: guardada.statusText, headers: cabeceras });
+    const saved = await cache.match(request);
+    if (!saved) return offlineResponse();
+    const headers = new Headers(saved.headers);
+    headers.set('X-From-Cache', '1');
+    return new Response(saved.body, { status: saved.status, statusText: saved.statusText, headers });
   }
 }
 
-function respuestaSinConexion() {
-  return new Response(JSON.stringify({ detail: 'Offline and no saved data yet' }), {
+function offlineResponse() {
+  return new Response(JSON.stringify({ detail: 'Sin conexión y todavía no hay datos guardados' }), {
     status: 503,
     headers: { 'Content-Type': 'application/json' },
   });
