@@ -1,62 +1,80 @@
-# AI Quoter · Frontend
+# Cotizador IA · Frontend
 
-Web interface for the **AI Quotation Engine** (Programación Orientada a la Web, UCC Pasto): a tool for freelancers
-who don't know how much to charge for a software project.
-Angular 21 · TypeScript · FastAPI + Neon (PostgreSQL) in the cloud · Vercel + Render.
+Interfaz web del **Motor de Cotización con IA** (Programación Orientada a la Web, UCC Pasto): una herramienta para
+freelancers que no saben cuánto cobrar por un proyecto de software.
+Angular 21 · TypeScript · FastAPI + Neon (PostgreSQL) en la nube · Vercel + Render.
 
-## What it does
-- Sign up with your email (a 6-digit code, no password): your quotes and rates are saved in your account, so
-  you never lose your progress.
-- Describe your project in plain words; the AI turns it into modules with optimistic / most likely / pessimistic
-  hours (PERT).
-- Calculates the price with **your hourly rates** (they start with market reference rates in COP; adjust them in
-  **My rates**): direct cost, contingency, margin, discount, VAT, schedule and payment milestones.
-- Simulates the risk with Monte Carlo (P50 / P80 / P90 and probability of exceeding the hours).
-- Generates the commercial proposal in Markdown for your client (read it, download it and print it).
-- Tracks each proposal: draft → sent → accepted / rejected.
+- App: https://cotizador-front-eight.vercel.app
+- API: https://cotizador-backend-c0ul.onrender.com/docs
 
-There are no roles: every user only sees their own quotes, rates and dashboard.
+## Qué hace
+- Registro con tu correo (un código de 6 dígitos, sin contraseña): tus cotizaciones y tarifas quedan en tu cuenta,
+  así nunca pierdes tu avance.
+- Describes el proyecto con tus palabras (en español o en inglés) y el análisis lo convierte en módulos con horas
+  optimistas / más probables / pesimistas (PERT).
+- Calcula el precio con **tus tarifas por hora** (empiezan con valores de referencia del mercado en COP; ajústalas en
+  **Mis tarifas**): costo directo, contingencia, margen, descuento, IVA, cronograma y pagos.
+- Simula el riesgo con Monte Carlo (P50 / P80 / P90 y probabilidad de pasarte de las horas).
+- Genera la propuesta comercial en Markdown para tu cliente (léela, descárgala o imprímela).
+- Sigue cada propuesta: borrador → enviada → aceptada / rechazada.
 
-## Login with an emailed code
-On **Sign up** or **Log in** the user enters their email and receives a 6-digit code that expires in 10 minutes.
-After verifying it, the session token is stored in the browser and sent on every API request. If the session expires, the app returns to the login screen. Logging out
-also clears the API data cached by the Service Worker, so another account on the same browser never sees it.
+No hay roles: cada persona solo ve sus propias cotizaciones, tarifas y panel.
 
-## The three workers
-| Worker | File | Purpose |
+## Pantallas
+| Ruta | Pantalla |
+| --- | --- |
+| `/registro`, `/login` | Registro e ingreso con código por correo |
+| `/` | Panel: indicadores, estados, horas por rol y módulos más cotizados |
+| `/cotizaciones` | Mis cotizaciones, con filtro por estado |
+| `/cotizaciones/nueva` | Asistente de 3 pasos: proyecto, alcance (con vista previa) y precio |
+| `/cotizaciones/:id` | Detalle con pestañas Módulos, Finanzas, Riesgo (Monte Carlo) y Propuesta |
+| `/tarifas` | Mis tarifas por rol, comparadas con el mercado |
+
+## Ingreso con código por correo
+En **Crear cuenta** o **Iniciar sesión** la persona escribe su correo y recibe un código de 6 dígitos que vence en 10 minutos.
+Al verificarlo, el token de la sesión se guarda en el navegador y se envía en cada petición a la API. Si la sesión
+vence, la app vuelve al login. Al cerrar sesión también se borran los datos de la API guardados por el Service Worker,
+así otra cuenta en el mismo navegador nunca los ve.
+
+## Los tres workers
+| Worker | Archivo | Para qué sirve |
 | --- | --- | --- |
-| Web Worker | `src/app/core/workers/simulation.worker.ts` | Monte Carlo off the main thread; the screen does not freeze. |
-| Shared Worker | `public/shared-worker.js` | Notifies every open tab when one of them changes data. |
-| Service Worker | `public/sw.js` | Network-first cache of GET requests: the app keeps showing data while offline. |
+| Web Worker | `src/app/core/workers/simulation.worker.ts` | Monte Carlo fuera del hilo principal: la pantalla no se congela. |
+| Shared Worker | `public/shared-worker.js` | Avisa a todas las pestañas abiertas cuando una cambia datos. |
+| Service Worker | `public/sw.js` | Caché "primero la red" de las lecturas GET: la app sigue mostrando datos sin conexión. |
 
-## Run locally
-Start the backend first (in its folder, with its `.env`): `uvicorn main:app --reload` → http://127.0.0.1:8000/docs.
+## Convención de nombres
+El código, los endpoints y los campos JSON están en inglés (`/quotes`, `hours_likely`, `status: "draft"`). Todo lo que
+ve la persona está en español: botones, menús, mensajes, estados y rutas del navegador.
+
+## Correr en local
+Primero el backend (en su carpeta, con su `.env`): `uvicorn main:app --reload` → http://127.0.0.1:8000/docs.
 
 ```bash
 npm install --legacy-peer-deps
-npm start            # http://localhost:4200  (expects the API at http://127.0.0.1:8000)
-npm test             # unit tests
-npm run build        # production build in dist/cotizador-front/browser
+npm start            # http://localhost:4200  (usa la API en http://127.0.0.1:8000)
+npm test             # pruebas unitarias
+npm run build        # build de producción en dist/cotizador-front/browser
 ```
 
-Sign up (locally the backend prints the code in its terminal with `EMAIL_BACKEND=consola`), then **New quote** → describe the project → **Create and analyze with AI**. To see how it
-works with real data, use **Load examples** on the Dashboard.
+Regístrate (en local el backend imprime el código en su terminal con `EMAIL_BACKEND=console`) y luego
+**Nueva cotización** → describe el proyecto → **Crear y analizar con IA**. Para verla con datos, usa **Cargar ejemplos** en el
+Panel.
 
-Scope descriptions must be written in Spanish: the backend's module detector uses Spanish keywords.
+## Configuración
+La URL del backend de producción está en `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
 
-## Configuration
-The production backend URL is in `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
+## Despliegue
+Vercel (preset Angular, salida `dist/cotizador-front/browser`). `vercel.json` redirige las rutas a `index.html` y evita
+que se guarden en caché `sw.js` y `shared-worker.js`.
 
-## Deployment
-Vercel (Angular preset, output `dist/cotizador-front/browser`). `vercel.json` rewrites routes to `index.html`
-and prevents caching `sw.js` and `shared-worker.js`.
-
-## Structure
+## Estructura
 ```
 src/app/
-  core/       config, models, HTTP services, utilities and workers
-  core/auth/  token interceptor and session guards
-  shared/     notifications and connection status
-  features/   auth, dashboard, quotes, quote-new, quote-detail, tariffs
-public/       sw.js and shared-worker.js
+  core/       configuración, modelos, servicios HTTP, utilidades y workers
+  core/auth/  interceptor del token y guards de sesión
+  shared/     íconos, notificaciones y estado de la conexión
+  features/   auth, dashboard, quotes, quote-new, quote-detail, rates
+public/       sw.js y shared-worker.js
+src/styles.css  sistema de diseño (tokens, tema oscuro/claro y componentes)
 ```
