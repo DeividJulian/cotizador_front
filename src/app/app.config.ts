@@ -4,12 +4,13 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { mockInterceptor } from './core/mocks/mock.interceptor';
 import { workersInterceptor } from './core/workers/workers.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([authInterceptor, workersInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, workersInterceptor, mockInterceptor])),
   ],
 };

@@ -75,6 +75,30 @@ Regístrate (en local el backend imprime el código en su terminal con `EMAIL_BA
 **Nueva cotización** → describe el proyecto → **Crear y analizar con IA**. Para verla con datos, usa **Cargar ejemplos** en el
 Panel.
 
+### Sin backend (modo de prueba)
+Abre la app con `?mock=1` (por ejemplo http://localhost:4200/?mock=1) y entra con cualquier correo y cualquier
+código de 6 dígitos. `core/mocks/mock.interceptor.ts` responde con los datos de `core/mocks/mock-data.ts`, que se
+tomaron de respuestas reales de la API y están tipados con `satisfies` sobre los tipos generados: si el contrato
+cambia, los mocks dejan de compilar. `?mock=0` lo apaga.
+
+## Contrato y tipos de extremo a extremo
+La cadena completa: **PostgreSQL → modelos SQLAlchemy → esquemas Pydantic → `openapi.json` → tipos TypeScript →
+componentes**. El contrato vive en el backend (`backend/openapi.json`); este repo guarda una copia en
+`contract/openapi.json` y genera `src/app/api` con [ng-openapi-gen](https://github.com/cyclosproject/ng-openapi-gen).
+
+```bash
+npm run gen:api     # copia ../backend/openapi.json (si está) y regenera src/app/api
+npm run check:api   # falla si la copia o el código generado están desactualizados
+```
+
+- `src/app/api` **no se edita a mano**: lo genera `npm run gen:api`.
+- `core/models` solo tiene alias de esos tipos y las etiquetas en español (`STATUS_LABELS`…). Si el backend cambia
+  o quita un campo, el front deja de compilar donde lo usa.
+- Elegimos ng-openapi-gen y no openapi-typescript + openapi-fetch porque genera funciones sobre el `HttpClient` de
+  Angular: siguen funcionando los interceptores del token, de las pestañas y del modo sin conexión. openapi-fetch usa
+  `fetch` y se los saltaría. Es compatible con Angular 16+ (este proyecto usa Angular 21) y su versión 1.1.0 salió
+  en septiembre de 2026.
+
 ## Configuración
 La URL del backend de producción está en `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
 
@@ -85,7 +109,9 @@ que se guarden en caché `sw.js` y `shared-worker.js`.
 ## Estructura
 ```
 src/app/
+  api/        cliente y tipos generados desde el contrato (no editar)
   core/       configuración, modelos, servicios HTTP, utilidades y workers
+  core/mocks/ datos e interceptor del modo de prueba (?mock=1)
   core/auth/  interceptor del token y guards de sesión
   shared/     íconos, panel de IA, notificaciones y estado de la conexión
   features/   auth, dashboard, quotes, quote-new, quote-detail, rates
