@@ -3,8 +3,10 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
+import * as api from '../../api/functions';
 import { API_URL } from '../config/api.config';
-import { CodeSent, RegisterInput, Session, User } from '../models';
+import { CodeSent, RegisterInput, Session } from '../models';
+import { body } from '../utils/api';
 
 // v2: sessions saved before the API moved to English names are dropped (the user logs in again)
 const STORAGE_KEY = 'cotizador.session.v2';
@@ -36,7 +38,6 @@ function readStoredSession(): Session | null {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  private readonly url = `${API_URL}/auth`;
 
   private readonly session = signal<Session | null>(readStoredSession());
 
@@ -45,23 +46,26 @@ export class AuthService {
   readonly isLoggedIn = computed(() => this.session() !== null);
 
   register(input: RegisterInput): Observable<CodeSent> {
-    return this.http.post<CodeSent>(`${this.url}/register`, input);
+    return api.register(this.http, API_URL, { body: input }).pipe(body());
   }
 
   /** Emails a login code (it also resends the sign-up code). */
   requestCode(email: string): Observable<CodeSent> {
-    return this.http.post<CodeSent>(`${this.url}/login`, { email });
+    return api.login(this.http, API_URL, { body: { email } }).pipe(body());
   }
 
   verify(email: string, code: string): Observable<Session> {
-    return this.http.post<Session>(`${this.url}/verify`, { email, code }).pipe(tap((session) => this.store(session)));
+    return api.verify(this.http, API_URL, { body: { email, code } }).pipe(
+      body(),
+      tap((session) => this.store(session)),
+    );
   }
 
   /** Checks with the backend that the saved session is still valid. */
   refreshProfile(): void {
     const current = this.session();
     if (!current) return;
-    this.http.get<User>(`${this.url}/me`).subscribe({
+    api.currentAccount(this.http, API_URL).pipe(body()).subscribe({
       next: (user) => this.store({ ...current, user }),
       error: () => undefined, // a 401 is handled by the interceptor, which logs out
     });

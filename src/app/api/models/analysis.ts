@@ -7,9 +7,9 @@ import { ScopeModule } from '../models/scope-module';
  * Result of the scope analysis. A quote that was never analyzed has the empty lists and no confidence.
  */
 export interface Analysis {
-  confidence?: ('low' | 'medium' | 'high' | null);
-  high_complexity_signals?: Array<string>;
-  low_complexity_signals?: Array<string>;
-  modules?: Array<ScopeModule>;
-  warnings?: Array<string>;
+  confidence: ('low' | 'medium' | 'high' | null);
+  high_complexity_signals: Array<string>;
+  low_complexity_signals: Array<string>;
+  modules: Array<ScopeModule>;
+  warnings: Array<string>;
 }

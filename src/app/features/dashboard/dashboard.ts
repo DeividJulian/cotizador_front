@@ -33,13 +33,13 @@ export class Dashboard {
   protected readonly firstName = computed(() => (this.auth.user()?.name ?? '').split(' ')[0]);
 
   protected readonly byStatus = computed(() => {
-    const counts = this.stats()?.by_status ?? {};
-    const max = Math.max(1, ...STATUSES.map((s) => counts[s] ?? 0));
+    const counts = this.stats()?.by_status;
+    const max = Math.max(1, ...STATUSES.map((s) => counts?.[s] ?? 0));
     return STATUSES.map((status) => ({
       status,
       label: STATUS_LABELS[status],
-      count: counts[status] ?? 0,
-      width: ((counts[status] ?? 0) / max) * 100,
+      count: counts?.[status] ?? 0,
+      width: ((counts?.[status] ?? 0) / max) * 100,
     }));
   });
 
@@ -50,10 +50,10 @@ export class Dashboard {
   });
 
   protected readonly totalHours = computed(() => this.hoursByRole().reduce((n, r) => n + r.hours, 0));
-  protected readonly waiting = computed(() => this.stats()?.by_status['sent'] ?? 0);
+  protected readonly waiting = computed(() => this.stats()?.by_status.sent ?? 0);
   protected readonly decided = computed(() => {
-    const s = this.stats()?.by_status ?? {};
-    return { accepted: s['accepted'] ?? 0, total: (s['accepted'] ?? 0) + (s['rejected'] ?? 0) };
+    const s = this.stats()?.by_status;
+    return { accepted: s?.accepted ?? 0, total: (s?.accepted ?? 0) + (s?.rejected ?? 0) };
   });
 
   constructor() {

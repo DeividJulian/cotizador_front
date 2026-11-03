@@ -2,36 +2,37 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import * as api from '../../api/functions';
 import { API_URL } from '../config/api.config';
-import { Rate, RateInput } from '../models';
+import { MarketRate, Rate, RateInput } from '../models';
+import { body } from '../utils/api';
 
 @Injectable({ providedIn: 'root' })
 export class RateService {
   private readonly http = inject(HttpClient);
-  private readonly url = `${API_URL}/rates`;
 
   list(): Observable<Rate[]> {
-    return this.http.get<Rate[]>(this.url);
+    return api.listRates(this.http, API_URL).pipe(body());
   }
 
   create(input: RateInput): Observable<Rate> {
-    return this.http.post<Rate>(this.url, input);
+    return api.createRate(this.http, API_URL, { body: input }).pipe(body());
   }
 
   update(id: number, input: RateInput): Observable<Rate> {
-    return this.http.put<Rate>(`${this.url}/${id}`, input);
+    return api.updateRate(this.http, API_URL, { rate_id: id, body: input }).pipe(body());
   }
 
   remove(id: number): Observable<unknown> {
-    return this.http.delete(`${this.url}/${id}`);
+    return api.deleteRate(this.http, API_URL, { rate_id: id }).pipe(body());
   }
 
   /** Replaces all your rates with the market reference ones. */
   resetToMarket(): Observable<Rate[]> {
-    return this.http.post<Rate[]>(`${this.url}/reset`, {});
+    return api.resetToMarket(this.http, API_URL).pipe(body());
   }
 
-  market(): Observable<RateInput[]> {
-    return this.http.get<RateInput[]>(`${this.url}/market`);
+  market(): Observable<MarketRate[]> {
+    return api.marketRates(this.http, API_URL).pipe(body());
   }
 }

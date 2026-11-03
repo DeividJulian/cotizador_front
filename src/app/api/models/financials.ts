@@ -9,16 +9,16 @@ import { RoleCost } from '../models/role-cost';
  * Price in whole Colombian pesos. Empty (all null) while the quote has no modules.
  */
 export interface Financials {
-  by_role?: (Array<RoleCost> | null);
-  contingency?: (number | null);
-  direct_cost?: (number | null);
-  discount?: (number | null);
-  duration_weeks?: (number | null);
-  margin?: (number | null);
-  params?: (FinanceParams | null);
-  payment_milestones?: (Array<Milestone> | null);
-  subtotal?: (number | null);
-  taxable_base?: (number | null);
-  total?: (number | null);
-  vat?: (number | null);
+  by_role: (Array<RoleCost> | null);
+  contingency: (number | null);
+  direct_cost: (number | null);
+  discount: (number | null);
+  duration_weeks: (number | null);
+  margin: (number | null);
+  params: (FinanceParams | null);
+  payment_milestones: (Array<Milestone> | null);
+  subtotal: (number | null);
+  taxable_base: (number | null);
+  total: (number | null);
+  vat: (number | null);
 }

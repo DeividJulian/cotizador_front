@@ -154,7 +154,7 @@
               <div class="card__footer">
                 <span class="meter" title="Confianza del análisis">
                   <span class="xsmall subtle">Confianza</span>
-                  <span class="meter__track"><span class="meter__fill meter__fill--ai" style="display: block" [style.width.%]="confidenceWidth[p.analysis.confidence] ?? 35"></span></span>
+                  <span class="meter__track"><span class="meter__fill meter__fill--ai" style="display: block" [style.width.%]="p.analysis.confidence ? confidenceWidth[p.analysis.confidence] : 35"></span></span>
                   <span class="meter__value">{{ level(p.analysis.confidence) }}</span>
                 </span>
                 @for (w of p.analysis.warnings; track w) {

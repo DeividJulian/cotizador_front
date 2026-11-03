@@ -7,12 +7,12 @@ import { RoleHours } from '../models/role-hours';
  * PERT hours by role and in total. Empty (all null) while the quote has no modules.
  */
 export interface Estimate {
-  by_role?: ({
+  by_role: ({
 [key: string]: RoleHours;
 } | null);
-  confidence?: ('low' | 'medium' | 'high' | null);
-  hours_expected?: (number | null);
-  hours_likely?: (number | null);
-  hours_optimistic?: (number | null);
-  hours_pessimistic?: (number | null);
+  confidence: ('low' | 'medium' | 'high' | null);
+  hours_expected: (number | null);
+  hours_likely: (number | null);
+  hours_optimistic: (number | null);
+  hours_pessimistic: (number | null);
 }

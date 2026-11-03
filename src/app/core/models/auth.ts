@@ -1,22 +1,6 @@
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  created_at: string;
-  last_login_at: string | null;
-}
+// Generated from the contract (npm run gen:api)
+import type { CodeSent, RegisterInput, SessionOut, UserOut } from '../../api/models';
 
-export interface Session {
-  token: string;
-  user: User;
-}
-
-export interface RegisterInput {
-  name: string;
-  email: string;
-}
-
-export interface CodeSent {
-  message: string;
-  email: string;
-}
+export type User = UserOut;
+export type Session = SessionOut;
+export type { CodeSent, RegisterInput };

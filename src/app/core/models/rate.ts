@@ -1,10 +1,6 @@
-export interface Rate {
-  id: number;
-  role: string;
-  hourly_rate: number;
-}
+// Generated from the contract (npm run gen:api)
+import type { MarketRate, RateCreate, RateOut } from '../../api/models';
 
-export interface RateInput {
-  role: string;
-  hourly_rate: number;
-}
+export type Rate = RateOut;
+export type RateInput = RateCreate;
+export type { MarketRate };

@@ -2,8 +2,10 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import * as api from '../../api/functions';
 import { API_URL } from '../config/api.config';
 import { AIStatus, ClientQuestions, PriceExplanation, ProposalWording, ScopeReview } from '../models';
+import { body } from '../utils/api';
 import { errorMessage } from '../utils/http-error';
 
 /** Names shown to the user for the provider the server reports. */
@@ -13,7 +15,6 @@ const PROVIDER_LABELS: Record<string, string> = { groq: 'Groq', gemini: 'Gemini'
 @Injectable({ providedIn: 'root' })
 export class AiService {
   private readonly http = inject(HttpClient);
-  private readonly url = `${API_URL}/ai`;
 
   /** null while the status has not arrived */
   readonly status = signal<AIStatus | null>(null);
@@ -29,7 +30,7 @@ export class AiService {
   loadStatus(): void {
     if (this.status() || this.loading) return;
     this.loading = true;
-    this.http.get<AIStatus>(`${this.url}/status`).subscribe({
+    api.aiStatus(this.http, API_URL).pipe(body()).subscribe({
       next: (status) => {
         this.status.set(status);
         this.loading = false;
@@ -39,19 +40,19 @@ export class AiService {
   }
 
   scopeReview(quoteId: number): Observable<ScopeReview> {
-    return this.http.post<ScopeReview>(`${this.url}/quotes/${quoteId}/scope-review`, {});
+    return api.scopeReview(this.http, API_URL, { quote_id: quoteId }).pipe(body());
   }
 
   explainPrice(quoteId: number): Observable<PriceExplanation> {
-    return this.http.post<PriceExplanation>(`${this.url}/quotes/${quoteId}/explain-price`, {});
+    return api.explainPrice(this.http, API_URL, { quote_id: quoteId }).pipe(body());
   }
 
   clientQuestions(quoteId: number): Observable<ClientQuestions> {
-    return this.http.post<ClientQuestions>(`${this.url}/quotes/${quoteId}/client-questions`, {});
+    return api.clientQuestions(this.http, API_URL, { quote_id: quoteId }).pipe(body());
   }
 
   improveProposal(quoteId: number): Observable<ProposalWording> {
-    return this.http.post<ProposalWording>(`${this.url}/quotes/${quoteId}/improve-proposal`, {});
+    return api.improveProposal(this.http, API_URL, { quote_id: quoteId }).pipe(body());
   }
 }
 
