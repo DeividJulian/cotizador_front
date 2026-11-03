@@ -6,7 +6,8 @@ import { Observable, tap } from 'rxjs';
 import * as api from '../../api/functions';
 import { API_URL } from '../config/api.config';
 import { CodeSent, RegisterInput, Session } from '../models';
-import { body } from '../utils/api';
+import { CodeSentSchema, SessionSchema, UserSchema } from '../schemas/api.schemas';
+import { parsed } from '../utils/api';
 
 // v2: sessions saved before the API moved to English names are dropped (the user logs in again)
 const STORAGE_KEY = 'cotizador.session.v2';
@@ -21,10 +22,11 @@ export function tokenExpired(token: string): boolean {
   }
 }
 
+/** localStorage can hold anything (an old version, a manual edit): it is parsed like an API response. */
 function readStoredSession(): Session | null {
   try {
-    const session = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as Session | null;
-    return session?.token && session.user && !tokenExpired(session.token) ? session : null;
+    const stored = SessionSchema.safeParse(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null'));
+    return stored.success && !tokenExpired(stored.data.token) ? stored.data : null;
   } catch {
     return null;
   }
@@ -46,17 +48,21 @@ export class AuthService {
   readonly isLoggedIn = computed(() => this.session() !== null);
 
   register(input: RegisterInput): Observable<CodeSent> {
-    return api.register(this.http, API_URL, { body: input }).pipe(body());
+    return api
+      .register(this.http, API_URL, { body: input })
+      .pipe(parsed(CodeSentSchema, 'la confirmación del correo'));
   }
 
   /** Emails a login code (it also resends the sign-up code). */
   requestCode(email: string): Observable<CodeSent> {
-    return api.login(this.http, API_URL, { body: { email } }).pipe(body());
+    return api
+      .login(this.http, API_URL, { body: { email } })
+      .pipe(parsed(CodeSentSchema, 'la confirmación del correo'));
   }
 
   verify(email: string, code: string): Observable<Session> {
     return api.verify(this.http, API_URL, { body: { email, code } }).pipe(
-      body(),
+      parsed(SessionSchema, 'la sesión'),
       tap((session) => this.store(session)),
     );
   }
@@ -65,10 +71,13 @@ export class AuthService {
   refreshProfile(): void {
     const current = this.session();
     if (!current) return;
-    api.currentAccount(this.http, API_URL).pipe(body()).subscribe({
-      next: (user) => this.store({ ...current, user }),
-      error: () => undefined, // a 401 is handled by the interceptor, which logs out
-    });
+    api
+      .currentAccount(this.http, API_URL)
+      .pipe(parsed(UserSchema, 'tu cuenta'))
+      .subscribe({
+        next: (user) => this.store({ ...current, user }),
+        error: () => undefined, // a 401 is handled by the interceptor, which logs out
+      });
   }
 
   logout(): void {
@@ -80,7 +89,11 @@ export class AuthService {
     }
     // The responses cached by the Service Worker belong to this user: another account must not see them
     if (typeof caches !== 'undefined') {
-      void caches.keys().then((names) => names.filter((n) => n.startsWith('cot-api')).forEach((n) => caches.delete(n)));
+      void caches
+        .keys()
+        .then((names) =>
+          names.filter((n) => n.startsWith('cot-api')).forEach((n) => caches.delete(n)),
+        );
     }
     void this.router.navigateByUrl('/login');
   }

@@ -4,8 +4,21 @@ import { Observable } from 'rxjs';
 
 import * as api from '../../api/functions';
 import { API_URL } from '../config/api.config';
-import { AIStatus, ClientQuestions, PriceExplanation, ProposalWording, ScopeReview } from '../models';
-import { body } from '../utils/api';
+import {
+  AIStatus,
+  ClientQuestions,
+  PriceExplanation,
+  ProposalWording,
+  ScopeReview,
+} from '../models';
+import {
+  AiStatusSchema,
+  ClientQuestionsSchema,
+  PriceExplanationSchema,
+  ProposalWordingSchema,
+  ScopeReviewSchema,
+} from '../schemas/api.schemas';
+import { parsed } from '../utils/api';
 import { errorMessage } from '../utils/http-error';
 
 /** Names shown to the user for the provider the server reports. */
@@ -30,29 +43,40 @@ export class AiService {
   loadStatus(): void {
     if (this.status() || this.loading) return;
     this.loading = true;
-    api.aiStatus(this.http, API_URL).pipe(body()).subscribe({
-      next: (status) => {
-        this.status.set(status);
-        this.loading = false;
-      },
-      error: () => (this.loading = false),
-    });
+    api
+      .aiStatus(this.http, API_URL)
+      .pipe(parsed(AiStatusSchema, 'el estado de la IA'))
+      .subscribe({
+        next: (status) => {
+          this.status.set(status);
+          this.loading = false;
+        },
+        error: () => (this.loading = false),
+      });
   }
 
   scopeReview(quoteId: number): Observable<ScopeReview> {
-    return api.scopeReview(this.http, API_URL, { quote_id: quoteId }).pipe(body());
+    return api
+      .scopeReview(this.http, API_URL, { quote_id: quoteId })
+      .pipe(parsed(ScopeReviewSchema, 'la segunda opinión de la IA'));
   }
 
   explainPrice(quoteId: number): Observable<PriceExplanation> {
-    return api.explainPrice(this.http, API_URL, { quote_id: quoteId }).pipe(body());
+    return api
+      .explainPrice(this.http, API_URL, { quote_id: quoteId })
+      .pipe(parsed(PriceExplanationSchema, 'la explicación del precio'));
   }
 
   clientQuestions(quoteId: number): Observable<ClientQuestions> {
-    return api.clientQuestions(this.http, API_URL, { quote_id: quoteId }).pipe(body());
+    return api
+      .clientQuestions(this.http, API_URL, { quote_id: quoteId })
+      .pipe(parsed(ClientQuestionsSchema, 'las preguntas para el cliente'));
   }
 
   improveProposal(quoteId: number): Observable<ProposalWording> {
-    return api.improveProposal(this.http, API_URL, { quote_id: quoteId }).pipe(body());
+    return api
+      .improveProposal(this.http, API_URL, { quote_id: quoteId })
+      .pipe(parsed(ProposalWordingSchema, 'la redacción sugerida'));
   }
 }
 
