@@ -99,6 +99,33 @@ npm run check:api   # falla si la copia o el código generado están desactualiz
   `fetch` y se los saltaría. Es compatible con Angular 16+ (este proyecto usa Angular 21) y su versión 1.1.0 salió
   en septiembre de 2026.
 
+## Validar no es lo mismo que parsear (Zod)
+Los tipos de TypeScript se borran al compilar. El propio cliente generado termina así:
+
+```ts
+return r as StrictHttpResponse<QuoteOut>;   // src/app/api/fn/cotizaciones/read-quote.ts
+```
+
+Ese `as` no comprueba nada: si el backend mandara `"total": "48726478"` (texto), TypeScript seguiría creyendo que es
+un número, y `cop(quote.total)` mostraría basura o fallaría lejos de donde está el problema.
+
+- **Validar** es preguntar «¿esto cumple?» y seguir usando el mismo dato sin tipo
+  (`if (typeof body.total === 'number') { … body … }`): lo que sigue sigue siendo `any`.
+- **Parsear** es transformar un `unknown` en un valor tipado **o** fallar en la frontera. Aquí cada servicio hace
+  `api.readQuote(...).pipe(parsed(QuoteSchema, 'la cotización'))`: lo que llega al componente es el **resultado**
+  del parseo (sin campos que el contrato no declara), nunca el JSON crudo.
+
+Si la respuesta no cumple el esquema (`core/utils/api.ts`):
+1. Se registra en la consola qué campo falló, con la URL: `[contrato] la cotización no cumple el esquema
+   (…/quotes/7): ✖ Invalid input → at total`.
+2. La pantalla recibe un `ContractError` con el mensaje «El servidor respondió la cotización con un formato
+   inesperado. Recarga la página; si sigue pasando, avísanos.» y lo muestra en su estado de error, sin romperse.
+
+Los esquemas están en `core/schemas/api.schemas.ts` y se escriben a mano (usamos `zod/mini`, que pesa 23 kB en el
+bundle). No se desalinean del contrato: cada uno pasa por `sameAs<Api.QuoteOut>()(…)`, que **no compila** si el tipo
+que produce el esquema no es exactamente el tipo generado desde `openapi.json`. La sesión guardada en `localStorage`
+también se parsea, porque ahí puede haber cualquier cosa. Las pruebas están en `core/schemas/api.schemas.spec.ts`.
+
 ## Configuración
 La URL del backend de producción está en `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
 
@@ -112,6 +139,7 @@ src/app/
   api/        cliente y tipos generados desde el contrato (no editar)
   core/       configuración, modelos, servicios HTTP, utilidades y workers
   core/mocks/ datos e interceptor del modo de prueba (?mock=1)
+  core/schemas/ esquemas Zod de las respuestas (parseo en runtime)
   core/auth/  interceptor del token y guards de sesión
   shared/     íconos, panel de IA, notificaciones y estado de la conexión
   features/   auth, dashboard, quotes, quote-new, quote-detail, rates
