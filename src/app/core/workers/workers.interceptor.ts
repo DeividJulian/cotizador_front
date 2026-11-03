@@ -7,6 +7,8 @@ import { ConnectionService } from './connection.service';
 import { TabSyncService } from './tab-sync.service';
 
 const CHANGES_DATA = /\/(quotes|rates|seed)/;
+// POSTs that only compute and save nothing (simulation, AI suggestions): the other tabs do not need to reload
+const READ_ONLY = /\/(simulation$|ai\/)/;
 
 /**
  * - When a request changes data (POST/PUT/PATCH/DELETE), tells the other tabs through the Shared Worker.
@@ -17,7 +19,8 @@ export const workersInterceptor: HttpInterceptorFn = (request, next) => {
   const connection = inject(ConnectionService);
 
   const isApi = request.url.startsWith(API_URL);
-  const modifies = isApi && request.method !== 'GET' && CHANGES_DATA.test(request.url);
+  const path = request.url.slice(API_URL.length).split('?')[0];
+  const modifies = isApi && request.method !== 'GET' && CHANGES_DATA.test(path) && !READ_ONLY.test(path);
 
   return next(request).pipe(
     tap((event) => {
