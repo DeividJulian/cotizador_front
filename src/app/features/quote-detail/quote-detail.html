@@ -165,6 +165,7 @@
       @case ('risk') {
         <app-ai-questions [quote]="q" />
         <app-simulation-panel [quote]="q" />
+        <app-server-simulation [quote]="q" />
       }
       @case ('proposal') {
         <app-quote-proposal [quote]="q" (changed)="load()" />

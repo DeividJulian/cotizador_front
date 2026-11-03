@@ -27,6 +27,7 @@ import { AiScopeReview } from './ai-scope-review';
 import { QuoteFinance } from './quote-finance';
 import { QuoteItems } from './quote-items';
 import { QuoteProposal } from './quote-proposal';
+import { ServerSimulation } from './server-simulation';
 import { SimulationPanel } from './simulation-panel';
 
 type Tab = 'modules' | 'finance' | 'risk' | 'proposal';
@@ -47,7 +48,7 @@ const STATUS_DONE: Record<QuoteStatus, string> = {
   selector: 'app-quote-detail',
   imports: [
     ReactiveFormsModule, RouterLink, Icon, QuoteItems, QuoteFinance, QuoteProposal, SimulationPanel,
-    AiScopeReview, AiPrice, AiQuestions,
+    AiScopeReview, AiPrice, AiQuestions, ServerSimulation,
   ],
   templateUrl: './quote-detail.html',
 })

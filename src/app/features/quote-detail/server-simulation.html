@@ -1,0 +1,101 @@
+<section class="card" aria-labelledby="srv-title">
+  <div class="card__header">
+    <div>
+      <h2 class="card__title" id="srv-title">Simulación en el servidor: REST o gRPC</h2>
+      <p class="card__subtitle">
+        La misma función de Python responde por los dos protocolos. Con gRPC (Connect + Protobuf) el servidor envía el
+        progreso mientras calcula; con REST (JSON) llega todo al final.
+      </p>
+    </div>
+    <div class="segmented" role="group" aria-label="Protocolo">
+      @for (p of protocols; track p) {
+        <button class="segmented__item" type="button" [class.is-active]="protocol() === p" [attr.aria-pressed]="protocol() === p"
+          [disabled]="running() !== null" (click)="protocol.set(p)">{{ labels[p] }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="card__body stack">
+    @if (mock) {
+      <p class="small subtle">En el modo de prueba (?mock=1) no hay servidor: usa la simulación con Web Worker de arriba.</p>
+    } @else if (!canRun()) {
+      <p class="small subtle">Analiza la cotización para poder simularla en el servidor.</p>
+    } @else {
+      <div class="sim-controls">
+        <div class="field">
+          <label class="label" for="srv-runs">Simulaciones</label>
+          <select class="select tabular" id="srv-runs" [ngModel]="runs()" (ngModelChange)="runs.set(+$event); changeParams()" [disabled]="running() !== null">
+            @for (n of runOptions; track n) { <option [ngValue]="n">{{ int(n) }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="srv-samples">Totales que se devuelven</label>
+          <select class="select tabular" id="srv-samples" [ngModel]="samples()" (ngModelChange)="samples.set(+$event); changeParams()" [disabled]="running() !== null">
+            @for (n of sampleOptions; track n) { <option [ngValue]="n">{{ n ? int(n) : 'Ninguno' }}</option> }
+          </select>
+        </div>
+        <button class="btn btn--primary" type="button" style="min-height: 42px" (click)="run()" [disabled]="running() !== null">
+          <app-icon name="chip" />Simular por {{ labels[protocol()] }}
+        </button>
+        <button class="btn btn--secondary" type="button" style="min-height: 42px" (click)="compare()" [disabled]="running() !== null">
+          Comparar los dos
+        </button>
+        @if (running()) {
+          <button class="btn btn--danger-ghost" type="button" style="min-height: 42px" (click)="cancel()"><app-icon name="close" />Cancelar</button>
+        }
+      </div>
+
+      @if (running(); as p) {
+        <div aria-live="polite">
+          <div class="progress-label">
+            <span>{{ labels[p] }} · calculando en el servidor…</span>
+            <span>{{ p === 'grpc' ? (progress() * 100).toFixed(0) + ' %' : 'esperando la respuesta completa' }}</span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="p === 'grpc' ? progress() * 100 : null" aria-label="Progreso de la simulación en el servidor">
+            <div class="progress__bar" [style.width.%]="p === 'grpc' ? progress() * 100 : 100" [style.opacity]="p === 'grpc' ? 1 : 0.35"></div>
+          </div>
+        </div>
+      }
+
+      @if (error(); as message) {
+        <div class="callout callout--danger" role="alert">
+          <app-icon name="warning" />
+          <div><div class="callout__title">No se pudo simular en el servidor</div>{{ message }}</div>
+        </div>
+      }
+
+      @if (last(); as r) {
+        <div class="pct-grid">
+          <div class="pct"><div class="pct__head"><span class="pct__label">P50</span></div><span class="pct__caption">{{ labels[r.protocol] }}</span><span class="pct__hours">{{ num(r.result.p50) }} h</span><span class="pct__price">{{ cop(r.result.price_p50) }}</span></div>
+          <div class="pct pct--recommended"><div class="pct__head"><span class="pct__label">P80</span><span class="badge badge--recommended">Cotización más segura</span></div><span class="pct__caption">{{ int(r.result.runs) }} escenarios</span><span class="pct__hours">{{ num(r.result.p80) }} h</span><span class="pct__price">{{ cop(r.result.price_p80) }}</span></div>
+          <div class="pct"><div class="pct__head"><span class="pct__label">P90</span></div><span class="pct__caption">{{ (r.result.prob_over_plan * 100).toFixed(0) }} % de pasarse de {{ num(r.result.planned_hours) }} h</span><span class="pct__hours">{{ num(r.result.p90) }} h</span><span class="pct__price">{{ cop(r.result.price_p90) }}</span></div>
+        </div>
+      }
+    }
+  </div>
+
+  @if (comparison(); as c) {
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="sr-only">Comparación REST frente a gRPC con {{ int(runs()) }} simulaciones y {{ int(samples()) }} totales</caption>
+        <thead><tr><th scope="col">Medida</th><th scope="col" class="num">REST (JSON)</th><th scope="col" class="num">gRPC (Protobuf)</th></tr></thead>
+        <tbody>
+          <tr><td>Tamaño del mensaje</td><td class="num strong">{{ size(c.rest.payloadBytes) }}</td><td class="num strong text-success">{{ size(c.grpc.payloadBytes) }}</td></tr>
+          <tr><td>Bytes por la red (comprimidos)</td><td class="num">{{ size(c.rest.wireBytes) }}</td><td class="num">{{ size(c.grpc.wireBytes) }}</td></tr>
+          <tr><td>Primer dato en pantalla</td><td class="num">{{ int(c.rest.firstDataMs) }} ms</td><td class="num text-success">{{ int(c.grpc.firstDataMs) }} ms</td></tr>
+          <tr><td>Tiempo total</td><td class="num">{{ int(c.rest.totalMs) }} ms</td><td class="num">{{ int(c.grpc.totalMs) }} ms</td></tr>
+          <tr><td>Cálculo en el servidor</td><td class="num">{{ int(c.rest.result.elapsed_ms) }} ms</td><td class="num">{{ int(c.grpc.result.elapsed_ms) }} ms</td></tr>
+          <tr><td>Mensajes recibidos</td><td class="num">{{ c.rest.messages }}</td><td class="num">{{ c.grpc.messages }} (progreso + resultado)</td></tr>
+          <tr><td>Resultado P80</td><td class="num">{{ num(c.rest.result.p80) }} h</td><td class="num">{{ num(c.grpc.result.p80) }} h</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card__footer">
+      <span class="hint">
+        @if (c.payloadSaved !== null) { Protobuf ocupa un {{ c.payloadSaved }} % menos que JSON. }
+        @if (c.wireSaved !== null) { Ya comprimido, viaja un {{ c.wireSaved }} % menos. }
+        El resultado es el mismo porque los dos llaman a la misma función con la misma semilla.
+      </span>
+    </div>
+  }
+</section>
