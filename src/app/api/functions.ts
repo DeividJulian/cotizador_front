@@ -59,6 +59,8 @@ export type { UpdateProposalSections$Params as UpdateProposalSections$Params } f
 export { updateProposalSections as updateProposalSections } from './fn/propuesta-comercial/update-proposal-sections';
 export type { DownloadProposal$Params as DownloadProposal$Params } from './fn/propuesta-comercial/download-proposal';
 export { downloadProposal as downloadProposal } from './fn/propuesta-comercial/download-proposal';
+export type { SimulateQuote$Params as SimulateQuote$Params } from './fn/simulacion-monte-carlo/simulate-quote';
+export { simulateQuote as simulateQuote } from './fn/simulacion-monte-carlo/simulate-quote';
 export type { ListRates$Params as ListRates$Params } from './fn/tarifas/list-rates';
 export { listRates as listRates } from './fn/tarifas/list-rates';
 export type { CreateRate$Params as CreateRate$Params } from './fn/tarifas/create-rate';

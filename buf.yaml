@@ -1,0 +1,4 @@
+# The .proto files are a copy of backend/proto (npm run gen:proto copies them)
+version: v2
+modules:
+  - path: proto

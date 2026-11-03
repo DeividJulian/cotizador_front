@@ -247,3 +247,22 @@ export const ProposalWordingSchema = sameAs<Api.ProposalWording>()(
     discarded: z.array(z.string()),
   }),
 );
+
+export const SimulationResultSchema = sameAs<Api.SimulationResult>()(
+  z.object({
+    runs: z.int(),
+    planned_hours: z.number(),
+    mean: z.number(),
+    p10: z.number(),
+    p50: z.number(),
+    p80: z.number(),
+    p90: z.number(),
+    prob_over_plan: z.number().check(z.minimum(0), z.maximum(1)),
+    price_p50: z.int(),
+    price_p80: z.int(),
+    price_p90: z.int(),
+    histogram: z.array(z.object({ start: z.number(), end: z.number(), count: z.int(), over_plan: z.boolean() })),
+    samples: z.array(z.number()),
+    elapsed_ms: z.int(),
+  }),
+);

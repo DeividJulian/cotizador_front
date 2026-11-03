@@ -1,0 +1,9 @@
+# npm run gen:proto -> src/app/grpc/gen (never edit by hand)
+version: v2
+inputs:
+  - directory: proto
+plugins:
+  - local: protoc-gen-es
+    out: src/app/grpc/gen
+    opt: target=ts
+clean: true
