@@ -126,6 +126,28 @@ bundle). No se desalinean del contrato: cada uno pasa por `sameAs<Api.QuoteOut>(
 que produce el esquema no es exactamente el tipo generado desde `openapi.json`. La sesión guardada en `localStorage`
 también se parsea, porque ahí puede haber cualquier cosa. Las pruebas están en `core/schemas/api.schemas.spec.ts`.
 
+## gRPC en el navegador (Connect + Protobuf)
+En **Cotización → Riesgo**, debajo de la simulación con Web Worker, está **Simulación en el servidor: REST o gRPC**:
+- Interruptor **gRPC (Protobuf)** / **REST (JSON)**. Los dos llegan a la misma función de Python.
+- Con gRPC la barra avanza con el progreso real que envía el servidor (server streaming). Con REST solo se espera la
+  respuesta completa.
+- **Cancelar** corta la petición (`AbortSignal`) y el servidor deja de calcular.
+- **Comparar los dos** corre ambos con el mismo volumen y muestra el tamaño del mensaje, los bytes por la red
+  (Resource Timing, gracias a `Timing-Allow-Origin`), el primer dato y el tiempo total.
+
+El cliente se genera desde el mismo `.proto` del backend:
+
+```bash
+npm run gen:proto     # copia ../backend/proto a proto/ y genera src/app/grpc/gen (buf + protoc-gen-es)
+npm run check:proto   # falla si la copia o el código generado están desactualizados
+```
+
+`core/grpc/server-simulation.service.ts` crea el cliente con `@connectrpc/connect-web`. El JWT viaja como metadata
+(`authorization`), y un `UNAUTHENTICATED` cierra la sesión igual que un 401. Las pruebas
+(`server-simulation.service.spec.ts`) usan un transporte en memoria: progreso, JWT, sin sesión, cotización ajena,
+cancelación y REST. Por qué Connect y no Envoy, las cifras medidas y la tabla REST / GraphQL / gRPC-Web / tRPC
+están en el README del backend. Para medir desde la terminal: `scripts/compare-protocols.mts`.
+
 ## Configuración
 La URL del backend de producción está en `src/app/core/config/api.config.ts` (`PRODUCTION_API`).
 
@@ -137,6 +159,8 @@ que se guarden en caché `sw.js` y `shared-worker.js`.
 ```
 src/app/
   api/        cliente y tipos generados desde el contrato (no editar)
+  grpc/gen/   cliente gRPC generado desde proto/ (no editar)
+  core/grpc/  simulación en el servidor por REST o gRPC
   core/       configuración, modelos, servicios HTTP, utilidades y workers
   core/mocks/ datos e interceptor del modo de prueba (?mock=1)
   core/schemas/ esquemas Zod de las respuestas (parseo en runtime)
