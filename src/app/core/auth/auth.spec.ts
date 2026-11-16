@@ -87,6 +87,26 @@ describe('sesión por código e interceptor', () => {
     expect(JSON.parse(localStorage.getItem('cotizador.session.v2')!).token).toBe(expected.token);
   });
 
+  it('la cuenta de demostración entra con contraseña y guarda la sesión', () => {
+    setup();
+    const auth = TestBed.inject(AuthService);
+    auth.loginWithPassword('administrador@gmail.com', 'demo123').subscribe();
+    const request = TestBed.inject(HttpTestingController).expectOne(`${API_URL}/auth/password`);
+    expect(request.request.body).toEqual({ email: 'administrador@gmail.com', password: 'demo123' });
+    request.flush(session());
+    expect(auth.isLoggedIn()).toBe(true);
+  });
+
+  it('una contraseña equivocada no deja sesión', () => {
+    setup();
+    const auth = TestBed.inject(AuthService);
+    auth.loginWithPassword('administrador@gmail.com', 'mala').subscribe({ error: () => undefined });
+    TestBed.inject(HttpTestingController)
+      .expectOne(`${API_URL}/auth/password`)
+      .flush({ detail: 'Correo o contraseña incorrectos.' }, { status: 401, statusText: 'Unauthorized' });
+    expect(auth.isLoggedIn()).toBe(false);
+  });
+
   it('un código incorrecto no deja sesión', () => {
     setup();
     const auth = TestBed.inject(AuthService);
