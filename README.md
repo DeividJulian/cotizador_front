@@ -50,6 +50,27 @@ Al verificarlo, el token de la sesión se guarda en el navegador y se envía en 
 vence, la app vuelve al login. Al cerrar sesión también se borran los datos de la API guardados por el Service Worker,
 así otra cuenta en el mismo navegador nunca los ve.
 
+## Cuentas de prueba
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador (o el rol con más permisos) | administrador@gmail.com | demo123 |
+
+Este proyecto no tiene roles: cada persona ve solo lo suyo. La cuenta de demostración es un usuario normal que ya
+trae sus tarifas y las 4 cotizaciones de ejemplo (borrador, enviada, aceptada y rechazada).
+
+**Cómo entrar:** en **Iniciar sesión** elige **Con contraseña** y escribe el correo y `demo123`. Las demás cuentas
+siguen entrando con el código de 6 dígitos que llega al correo; la contraseña no sirve para ellas.
+
+- El servidor crea la cuenta al arrancar si no existe (`services/demo.py`). Nunca se envían códigos ni correos a esa
+  dirección: no es nuestra.
+- Variables: `DEMO_ACCOUNTS` (por defecto `true`), `DEMO_ADMIN_EMAIL` (por defecto `administrador@gmail.com`) y
+  `DEMO_PASSWORD` (por defecto `demo123`). Con `DEMO_ACCOUNTS=false` la cuenta no entra y no se crea.
+
+> **Después de presentar, poner DEMO_ACCOUNTS=false en el servidor.**
+
+En el backend, `POST /auth/password` es la única ruta que acepta contraseña.
+
 ## Los tres workers
 | Worker | Archivo | Para qué sirve |
 | --- | --- | --- |
