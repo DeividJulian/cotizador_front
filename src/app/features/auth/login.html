@@ -5,28 +5,66 @@
     @if (sentTo(); as email) {
       <app-code-step [email]="email" (verified)="enter()" (back)="sentTo.set(null)" />
     } @else {
-      <form class="auth-card" novalidate [formGroup]="form" (ngSubmit)="requestCode()">
+      <div class="auth-card">
         <div class="segmented segmented--block" role="tablist" aria-label="Cuenta">
           <a class="segmented__item is-active" role="tab" aria-selected="true" routerLink="/login">Iniciar sesión</a>
           <a class="segmented__item" role="tab" aria-selected="false" routerLink="/registro">Crear cuenta</a>
         </div>
         <div>
           <h2 class="auth-card__title">Qué bueno verte de nuevo</h2>
-          <p class="auth-card__text">Sin contraseña: te enviaremos un código de 6 dígitos al correo.</p>
-        </div>
-        <div class="field" [class.field--error]="form.controls.email.touched && form.controls.email.invalid">
-          <label class="label" for="login-email">Correo</label>
-          <input class="input" id="login-email" type="email" autocomplete="email" inputmode="email"
-            placeholder="tu@correo.com" formControlName="email" />
-          @if (form.controls.email.touched && form.controls.email.invalid) {
-            <span class="error-text">Escribe un correo válido.</span>
+          @if (mode() === 'code') {
+            <p class="auth-card__text">Sin contraseña: te enviaremos un código de 6 dígitos al correo.</p>
+          } @else {
+            <p class="auth-card__text">La contraseña es solo para la cuenta de demostración. Las demás cuentas entran con código.</p>
           }
         </div>
-        <button class="btn btn--primary btn--lg btn--block" [class.is-loading]="sending()" type="submit" [disabled]="sending()">
-          <app-icon name="mail" />Enviarme un código
-        </button>
+        <div class="segmented segmented--block" role="group" aria-label="Forma de entrar">
+          <button class="segmented__item" type="button" [class.is-active]="mode() === 'code'" [attr.aria-pressed]="mode() === 'code'" (click)="mode.set('code')">
+            <app-icon name="mail" size="sm" />Con código
+          </button>
+          <button class="segmented__item" type="button" [class.is-active]="mode() === 'password'" [attr.aria-pressed]="mode() === 'password'" (click)="mode.set('password')">
+            <app-icon name="shield" size="sm" />Con contraseña
+          </button>
+        </div>
+
+        @if (mode() === 'code') {
+          <form class="stack" novalidate [formGroup]="form" (ngSubmit)="requestCode()">
+            <div class="field" [class.field--error]="form.controls.email.touched && form.controls.email.invalid">
+              <label class="label" for="login-email">Correo</label>
+              <input class="input" id="login-email" type="email" autocomplete="email" inputmode="email"
+                placeholder="tu@correo.com" formControlName="email" />
+              @if (form.controls.email.touched && form.controls.email.invalid) {
+                <span class="error-text">Escribe un correo válido.</span>
+              }
+            </div>
+            <button class="btn btn--primary btn--lg btn--block" [class.is-loading]="sending()" type="submit" [disabled]="sending()">
+              <app-icon name="mail" />Enviarme un código
+            </button>
+          </form>
+        } @else {
+          <form class="stack" novalidate [formGroup]="passwordForm" (ngSubmit)="loginWithPassword()">
+            <div class="field" [class.field--error]="passwordForm.controls.email.touched && passwordForm.controls.email.invalid">
+              <label class="label" for="pw-email">Correo</label>
+              <input class="input" id="pw-email" type="email" autocomplete="username" inputmode="email"
+                placeholder="administrador@gmail.com" formControlName="email" />
+              @if (passwordForm.controls.email.touched && passwordForm.controls.email.invalid) {
+                <span class="error-text">Escribe un correo válido.</span>
+              }
+            </div>
+            <div class="field" [class.field--error]="passwordForm.controls.password.touched && passwordForm.controls.password.invalid">
+              <label class="label" for="pw-password">Contraseña</label>
+              <input class="input" id="pw-password" type="password" autocomplete="current-password" formControlName="password" />
+              @if (passwordForm.controls.password.touched && passwordForm.controls.password.invalid) {
+                <span class="error-text">Escribe la contraseña.</span>
+              }
+            </div>
+            <button class="btn btn--primary btn--lg btn--block" [class.is-loading]="sending()" type="submit" [disabled]="sending()">
+              <app-icon name="check" />Entrar
+            </button>
+          </form>
+        }
         <p class="auth-card__foot">¿Eres nuevo? <a routerLink="/registro">Crea una cuenta gratis</a></p>
-      </form>
+      </div>
     }
     <p class="auth__legal">Tus cotizaciones y tarifas son privadas: solo las ves tú.</p>
   </section>

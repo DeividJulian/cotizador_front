@@ -49,6 +49,7 @@ const ROUTES: Route[] = [
   ['POST', api.register.PATH, () => codeSent],
   ['POST', api.login.PATH, () => codeSent],
   ['POST', api.verify.PATH, () => ({ token: mockToken(), user: MOCK_USER }) satisfies SessionOut],
+  ['POST', api.passwordLogin.PATH, () => ({ token: mockToken(), user: MOCK_USER }) satisfies SessionOut],
   ['GET', api.currentAccount.PATH, () => MOCK_USER],
   ['GET', api.listQuotes.PATH, () => MOCK_QUOTES],
   ['POST', api.createQuote.PATH, () => MOCK_QUOTE],

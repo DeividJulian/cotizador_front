@@ -20,6 +20,7 @@ export type { MarketRate } from './models/market-rate';
 export type { Message } from './models/message';
 export type { Milestone } from './models/milestone';
 export type { ModuleSuggestion } from './models/module-suggestion';
+export type { PasswordLoginInput } from './models/password-login-input';
 export type { PriceExplanation } from './models/price-explanation';
 export type { ProposalOut } from './models/proposal-out';
 export type { ProposalSectionsUpdate } from './models/proposal-sections-update';

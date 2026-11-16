@@ -19,6 +19,8 @@ export type { Login$Params as Login$Params } from './fn/autenticacion/login';
 export { login as login } from './fn/autenticacion/login';
 export type { CurrentAccount$Params as CurrentAccount$Params } from './fn/autenticacion/current-account';
 export { currentAccount as currentAccount } from './fn/autenticacion/current-account';
+export type { PasswordLogin$Params as PasswordLogin$Params } from './fn/autenticacion/password-login';
+export { passwordLogin as passwordLogin } from './fn/autenticacion/password-login';
 export type { Register$Params as Register$Params } from './fn/autenticacion/register';
 export { register as register } from './fn/autenticacion/register';
 export type { Verify$Params as Verify$Params } from './fn/autenticacion/verify';

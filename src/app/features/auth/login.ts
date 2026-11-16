@@ -9,6 +9,9 @@ import { Icon } from '../../shared/icon/icon';
 import { AuthPitch } from './auth-pitch';
 import { CodeStep } from './code-step';
 
+/** code: the normal login (6-digit code by email). password: only the demo account. */
+type Mode = 'code' | 'password';
+
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink, CodeStep, AuthPitch, Icon],
@@ -20,11 +23,17 @@ export class Login {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
 
+  protected readonly mode = signal<Mode>('code');
   protected readonly sentTo = signal<string | null>(null);
   protected readonly sending = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
+  });
+
+  protected readonly passwordForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]],
   });
 
   protected requestCode(): void {
@@ -42,6 +51,25 @@ export class Login {
       error: (err) => {
         this.sending.set(false);
         this.toast.error('No pudimos enviarte el código', errorMessage(err));
+      },
+    });
+  }
+
+  protected loginWithPassword(): void {
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+    const { email, password } = this.passwordForm.getRawValue();
+    this.sending.set(true);
+    this.auth.loginWithPassword(email.trim().toLowerCase(), password).subscribe({
+      next: () => {
+        this.sending.set(false);
+        this.enter();
+      },
+      error: (err) => {
+        this.sending.set(false);
+        this.toast.error('No pudimos iniciar sesión', errorMessage(err));
       },
     });
   }

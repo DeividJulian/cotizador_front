@@ -67,6 +67,14 @@ export class AuthService {
     );
   }
 
+  /** Only the demo account accepts a password; everybody else logs in with an emailed code. */
+  loginWithPassword(email: string, password: string): Observable<Session> {
+    return api.passwordLogin(this.http, API_URL, { body: { email, password } }).pipe(
+      parsed(SessionSchema, 'la sesión'),
+      tap((session) => this.store(session)),
+    );
+  }
+
   /** Checks with the backend that the saved session is still valid. */
   refreshProfile(): void {
     const current = this.session();
