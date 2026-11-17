@@ -71,7 +71,6 @@ const ROUTES: Route[] = [
   ['PUT', api.updateRate.PATH, () => MOCK_RATES[0]],
   ['DELETE', api.deleteRate.PATH, () => deleted],
   ['GET', api.myStats.PATH, () => MOCK_STATS],
-  ['POST', api.loadExampleQuotes.PATH, () => ({ message: 'Ejemplos cargados (modo de prueba)', summary: { quotes: 4 } })],
   ['POST', api.estimateScope.PATH, () => MOCK_SCOPE_ESTIMATE],
   ['POST', api.simulatePrice.PATH, () => MOCK_QUOTE.financials],
   ['GET', api.aiStatus.PATH, () => MOCK_AI_STATUS],

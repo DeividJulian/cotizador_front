@@ -200,9 +200,6 @@ export const StatsSchema = sameAs<Api.Stats>()(
     top_modules: z.array(z.object({ module: z.string(), count: z.number() })),
   }),
 );
-export const SeedResultSchema = sameAs<Api.SeedResult>()(
-  z.object({ message: z.string(), summary: z.object({ quotes: z.number() }) }),
-);
 
 export const AiStatusSchema = sameAs<Api.AiStatus>()(
   z.object({ configured: z.boolean(), provider: z.string(), model: z.string() }),

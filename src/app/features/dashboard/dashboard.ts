@@ -4,7 +4,6 @@ import { RouterLink } from '@angular/router';
 import { STATUSES, STATUS_LABELS, Stats } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { StatsService } from '../../core/services/stats.service';
-import { ToastService } from '../../core/services/toast.service';
 import { cop, num, roleColor } from '../../core/utils/format';
 import { errorMessage } from '../../core/utils/http-error';
 import { TabSyncService } from '../../core/workers/tab-sync.service';
@@ -17,7 +16,6 @@ import { Icon } from '../../shared/icon/icon';
 })
 export class Dashboard {
   private readonly statsService = inject(StatsService);
-  private readonly toast = inject(ToastService);
   private readonly sync = inject(TabSyncService);
   protected readonly auth = inject(AuthService);
 
@@ -28,7 +26,6 @@ export class Dashboard {
   protected readonly stats = signal<Stats | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly loadingExamples = signal(false);
 
   protected readonly firstName = computed(() => (this.auth.user()?.name ?? '').split(' ')[0]);
 
@@ -79,24 +76,6 @@ export class Dashboard {
       error: (err) => {
         this.error.set(errorMessage(err));
         this.loading.set(false);
-      },
-    });
-  }
-
-  protected loadExamples(): void {
-    const hasData = (this.stats()?.total_quotes ?? 0) > 0;
-    if (hasData && !confirm('Ya tienes cotizaciones. Esto BORRA todas tus cotizaciones y carga los ejemplos. ¿Continuar?')) return;
-
-    this.loadingExamples.set(true);
-    this.statsService.loadExamples(hasData).subscribe({
-      next: () => {
-        this.loadingExamples.set(false);
-        this.toast.ok('Ejemplos cargados', 'Abre una cotización para ver cómo funciona.');
-        this.load();
-      },
-      error: (err) => {
-        this.loadingExamples.set(false);
-        this.toast.error('No se pudieron cargar los ejemplos', errorMessage(err));
       },
     });
   }

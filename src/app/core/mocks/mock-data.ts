@@ -1,5 +1,5 @@
 // Mock data for working without the backend. It was taken from real API responses (the example quotes of
-// POST /seed) and every value `satisfies` a type generated from the contract: if the backend changes a field,
+// the demo account) and every value `satisfies` a type generated from the contract: if the backend changes a field,
 // these mocks stop compiling.
 import type {
   AiStatus,

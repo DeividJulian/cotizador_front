@@ -6,7 +6,7 @@ import { API_URL } from '../config/api.config';
 import { ConnectionService } from './connection.service';
 import { TabSyncService } from './tab-sync.service';
 
-const CHANGES_DATA = /\/(quotes|rates|seed)/;
+const CHANGES_DATA = /\/(quotes|rates)/;
 // POSTs that only compute and save nothing (simulation, AI suggestions): the other tabs do not need to reload
 const READ_ONLY = /\/(simulation$|ai\/)/;
 

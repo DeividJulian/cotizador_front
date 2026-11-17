@@ -79,7 +79,5 @@ export type { AnalyzeScopeText$Params as AnalyzeScopeText$Params } from './fn/al
 export { analyzeScopeText as analyzeScopeText } from './fn/alcance/analyze-scope-text';
 export type { EstimateScope$Params as EstimateScope$Params } from './fn/alcance/estimate-scope';
 export { estimateScope as estimateScope } from './fn/alcance/estimate-scope';
-export type { LoadExampleQuotes$Params as LoadExampleQuotes$Params } from './fn/datos-de-ejemplo/load-example-quotes';
-export { loadExampleQuotes as loadExampleQuotes } from './fn/datos-de-ejemplo/load-example-quotes';
 export type { MyStats$Params as MyStats$Params } from './fn/estadisticas/my-stats';
 export { myStats as myStats } from './fn/estadisticas/my-stats';

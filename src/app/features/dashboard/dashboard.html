@@ -37,11 +37,7 @@
           </div>
           <div class="btn-group">
             <a class="btn btn--primary btn--lg" routerLink="/cotizaciones/nueva"><app-icon name="plus" />Nueva cotización</a>
-            <button class="btn btn--secondary btn--lg" type="button" (click)="loadExamples()" [disabled]="loadingExamples()">
-              {{ loadingExamples() ? 'Cargando…' : 'Cargar ejemplos' }}
-            </button>
           </div>
-          <p class="hint" style="margin-top: -8px">¿Aún no? Carga ejemplos para explorar la app con cotizaciones de muestra.</p>
           <ol class="checklist" aria-label="Primeros pasos">
             <li class="checklist__item">
               <span class="checklist__num">1</span>
@@ -129,9 +125,6 @@
           <p class="page-subtitle">Tu actividad de cotización de un vistazo.</p>
         </div>
         <div class="page-actions">
-          <button class="btn btn--secondary" type="button" (click)="loadExamples()" [disabled]="loadingExamples()">
-            {{ loadingExamples() ? 'Cargando…' : 'Cargar ejemplos' }}
-          </button>
           <a class="btn btn--primary" routerLink="/cotizaciones/nueva"><app-icon name="plus" />Nueva cotización</a>
         </div>
       </div>

@@ -93,8 +93,8 @@ npm run build        # build de producción en dist/cotizador-front/browser
 ```
 
 Regístrate (en local el backend imprime el código en su terminal con `EMAIL_BACKEND=console`) y luego
-**Nueva cotización** → describe el proyecto → **Crear y analizar con IA**. Para verla con datos, usa **Cargar ejemplos** en el
-Panel.
+**Nueva cotización** → describe el proyecto → **Crear y analizar con IA**. Para verla con datos, entra con la
+cuenta de demostración (ver «Cuentas de prueba»).
 
 ### Sin backend (modo de prueba)
 Abre la app con `?mock=1` (por ejemplo http://localhost:4200/?mock=1) y entra con cualquier correo y cualquier

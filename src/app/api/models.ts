@@ -42,8 +42,6 @@ export type { ScopeModule } from './models/scope-module';
 export type { ScopeReview } from './models/scope-review';
 export type { SectionChange } from './models/section-change';
 export type { SectionText } from './models/section-text';
-export type { SeedResult } from './models/seed-result';
-export type { SeedSummary } from './models/seed-summary';
 export type { SessionOut } from './models/session-out';
 export type { SimilarQuote } from './models/similar-quote';
 export type { SimulationInput } from './models/simulation-input';
